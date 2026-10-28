@@ -6,10 +6,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="白耳盤點系統" />
-  <title>白耳鼻喉科｜行動藥品盤點系統</title>
-  <!-- Tailwind CSS -->
+  <title>白耳鼻喉科｜行動藥品盤點系統 v4.6</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SheetJS (xlsx) 用於匯出與匯入 Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body {
@@ -17,20 +15,14 @@
       background-color: #f1f5f9;
       -webkit-tap-highlight-color: transparent;
     }
-    .safe-bottom {
-      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
-    }
-    input:focus, select:focus {
-      outline: none;
-    }
+    .safe-bottom { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+    input:focus, select:focus { outline: none; }
     @keyframes pulse-ring {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
       70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
-    .recording-pulse {
-      animation: pulse-ring 1.5s infinite;
-    }
+    .recording-pulse { animation: pulse-ring 1.4s infinite; }
   </style>
 </head>
 <body class="text-slate-800 min-h-screen safe-bottom">
@@ -39,29 +31,26 @@
   <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-lg">
     <div class="max-w-2xl mx-auto px-3 py-2.5">
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider">ENT</span>
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
+          <span class="bg-amber-400 text-slate-950 font-mono text-[11px] font-black px-1.5 py-0.5 rounded">v4.6</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <!-- 強制更新版本按鈕 (保留資料) -->
-          <button onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition" title="強制穿透快取更新版本（資料保留）">
+          <button type="button" onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
             <span>🔄 更新版本</span>
           </button>
-          <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
+          <button type="button" onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
             <span>📥 匯出 Excel</span>
           </button>
         </div>
       </div>
 
-      <!-- 盤點作業日期 & 預設所在樓層切換 -->
       <div class="mt-2 pt-2 border-t border-slate-700/80 grid grid-cols-12 gap-2 items-center text-xs">
-        <!-- 作業日期 -->
         <div class="col-span-7 flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700">
           <span class="text-slate-400 whitespace-nowrap">📅 盤點日:</span>
           <input type="date" id="workingDateInput" onchange="onWorkingDateChange()" class="bg-transparent text-amber-300 font-bold w-full text-xs cursor-pointer" />
         </div>
-        <!-- 目前所在樓層預設值 -->
         <div class="col-span-5 flex items-center justify-between bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
           <span class="text-slate-400 whitespace-nowrap text-[11px]">預設樓層:</span>
           <div class="inline-flex rounded-md bg-slate-900 p-0.5 border border-slate-700">
@@ -73,13 +62,10 @@
     </div>
   </header>
 
-  <!-- 主內容容器 -->
   <main class="max-w-2xl mx-auto px-3 pt-3">
 
-    <!-- 分頁內容 1：隨看隨盤作業區 -->
+    <!-- 分頁 1：隨看隨盤作業區 -->
     <section id="tab-scan" class="space-y-3">
-
-      <!-- 搜尋與雙按鈕語音控制區 -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
         <div class="flex items-center justify-between mb-1.5">
           <label for="searchInput" class="text-xs font-bold text-slate-600 flex items-center gap-1">
@@ -88,14 +74,14 @@
           <span id="drugCountBadge" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">內建 141 品項</span>
         </div>
 
-        <!-- 搜尋文字輸入框 -->
         <div class="relative flex items-center">
           <input
             type="text"
             id="searchInput"
+            onfocus="safelyReleaseMic()"
             oninput="handleSearchInput()"
             onkeydown="handleSearchKeydown(event)"
-            placeholder="輸入藥代(如 AM5、AU6、17)或藥名(如 安蒙西林500)..."
+            placeholder="輸入藥代(如 AM5、ASV、SEN)或藥名..."
             autocomplete="off"
             class="w-full pl-3.5 pr-10 py-3 bg-slate-50 border-2 border-slate-300 focus:border-emerald-600 focus:bg-white rounded-xl text-base font-bold text-slate-900 placeholder-slate-400 transition"
           />
@@ -104,11 +90,10 @@
             id="clearSearchBtn"
             onclick="clearSearch()"
             class="hidden absolute right-2.5 px-2 py-1.5 text-slate-400 hover:text-slate-600 text-sm font-bold"
-            title="清除搜尋"
           >✕</button>
         </div>
 
-        <!-- 雙按鈕語音控制區：開始語音 ＋ 停止辨識 -->
+        <!-- 雙按鈕語音控制區 -->
         <div class="mt-2.5 grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -123,7 +108,7 @@
           <button
             type="button"
             id="stopVoiceBtn"
-            onclick="stopVoiceRecognition(true)"
+            onclick="stopVoiceRecognition()"
             disabled
             class="py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-slate-200 text-slate-400 cursor-not-allowed transition"
           >
@@ -132,30 +117,26 @@
           </button>
         </div>
 
-        <!-- 語音即時收音狀態與邊講邊出字回饋橫幅 -->
+        <!-- 語音狀態橫幅 -->
         <div id="voiceStatusBar" class="mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-2">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600">語音待命：點擊「🎤 開始接收語音」，連續盤點不卡死</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600">語音待命：點「🎤 開始接收語音」亮綠燈後說出藥代或藥名（講完自動鎖定或按 ⏹️ 停止）</span>
           </div>
         </div>
 
-        <!-- 搜尋候選清單 -->
         <div id="searchResultsDropdown" class="hidden mt-2 border-2 border-emerald-500 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xl max-h-72 overflow-y-auto"></div>
 
-        <!-- 最近盤點或常用快速切換膠囊列 -->
         <div class="mt-2.5">
           <div class="text-[11px] text-slate-400 font-semibold mb-1">⚡ 快速點選（最近盤點 / 常用）：</div>
           <div class="flex flex-wrap items-center gap-1.5" id="quickDrugPills"></div>
         </div>
       </div>
 
-      <!-- 當前選中藥品的專屬盤點卡 -->
       <div id="activeDrugCardContainer"></div>
-
     </section>
 
-    <!-- 分頁內容 2：已盤點總覽與篩選 -->
+    <!-- 分頁 2：已盤點總覽 -->
     <section id="tab-list" class="hidden space-y-3">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -164,13 +145,12 @@
             <p class="text-xs text-slate-500">點擊任一品項可直接跳轉修改樓層、數量或 4 碼效期</p>
           </div>
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-            <button onclick="setListFilter('ALL')" id="filterBtn-ALL" class="px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm">全部</button>
-            <button onclick="setListFilter('DONE')" id="filterBtn-DONE" class="px-2.5 py-1 rounded-lg text-slate-600">已盤點</button>
-            <button onclick="setListFilter('PENDING')" id="filterBtn-PENDING" class="px-2.5 py-1 rounded-lg text-slate-600">未盤點</button>
+            <button type="button" onclick="setListFilter('ALL')" id="filterBtn-ALL" class="px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm">全部</button>
+            <button type="button" onclick="setListFilter('DONE')" id="filterBtn-DONE" class="px-2.5 py-1 rounded-lg text-slate-600">已盤點</button>
+            <button type="button" onclick="setListFilter('PENDING')" id="filterBtn-PENDING" class="px-2.5 py-1 rounded-lg text-slate-600">未盤點</button>
           </div>
         </div>
 
-        <!-- 統計小卡 -->
         <div class="grid grid-cols-3 gap-2 mb-3 text-center">
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
             <div class="text-[11px] text-slate-500 font-semibold">總品項數</div>
@@ -186,7 +166,6 @@
           </div>
         </div>
 
-        <!-- 總覽頁內快速過濾搜尋框 -->
         <div class="mb-3">
           <input
             type="text"
@@ -201,48 +180,35 @@
       </div>
     </section>
 
-    <!-- 分頁內容 3：主檔匯入與報表匯出管理 -->
+    <!-- 分頁 3：主檔匯入與報表匯出 -->
     <section id="tab-manage" class="hidden space-y-3">
-      <!-- 匯出 Excel 卡片 -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-          <span>📊 匯出盤點 Excel 報表 (.xlsx)</span>
-        </h2>
+        <h2 class="text-base font-bold text-slate-800">📊 匯出盤點 Excel 報表 (.xlsx)</h2>
         <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-          匯出檔案包含 3 個工作表：<br/>
-          1. <strong>1_效期批號明細表</strong>（含藥品代碼、藥品名稱、1樓/3樓、數量與「開」、4碼效期）<br/>
-          2. <strong>2_單品總量彙總表</strong>（自動排除「開」並分列 1樓、3樓與全院數字總量）<br/>
-          3. <strong>3_歷次複盤修改紀錄</strong>（完整保存跨日初盤與複盤修改軌跡）
+          包含 3 個工作表：<strong>1_效期批號明細表</strong>、<strong>2_單品總量彙總表</strong>（自動排除「開」並分列 1樓/3樓）、<strong>3_歷次複盤修改紀錄</strong>。
         </p>
-        <button onclick="exportToExcel()" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-2 text-sm transition">
+        <button type="button" onclick="exportToExcel()" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-2 text-sm transition">
           <span>📥 立即下載 Excel 盤點報表 (.xlsx)</span>
         </button>
       </div>
 
-      <!-- 匯入更新藥品主檔 Excel -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-          <span>📂 藥品清單主檔管理（已內建 141 筆）</span>
-        </h2>
-        <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-          系統已直接內建您提供的 141 筆白耳鼻喉科藥品清單。未來若診所藥品有新增或異動，可由此上傳新版 Excel 檔覆蓋或重設回內建 141 筆清單。
-        </p>
+        <h2 class="text-base font-bold text-slate-800">📂 藥品清單主檔管理（已內建 141 筆）</h2>
         <div class="mt-3 flex flex-col sm:flex-row gap-2">
           <label class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-center text-xs cursor-pointer transition">
             <span>📤 匯入新版藥品清單 Excel (.xlsx/.csv)</span>
             <input type="file" id="excelMasterInput" accept=".xlsx,.xls,.csv" onchange="importDrugMasterExcel(event)" class="hidden" />
           </label>
-          <button onclick="restoreBuiltin141Drugs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition">
+          <button type="button" onclick="restoreBuiltin141Drugs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition">
             🔄 還原內建 141 筆藥品主檔
           </button>
         </div>
       </div>
 
-      <!-- 資料備份與清空 -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-2.5">
         <h2 class="text-base font-bold text-slate-800">⚙️ 系統資料備份與清理</h2>
         <div class="grid grid-cols-2 gap-2">
-          <button onclick="exportBackupJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs">
+          <button type="button" onclick="exportBackupJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs">
             💾 匯出 JSON 備份
           </button>
           <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs text-center cursor-pointer">
@@ -250,35 +216,29 @@
             <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
           </label>
         </div>
-        <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-2">
-          <button onclick="clearAllInventoryData()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-3 rounded-xl text-xs">
+        <div class="pt-2 border-t border-slate-100">
+          <button type="button" onclick="clearAllInventoryData()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-3 rounded-xl text-xs">
             🗑️ 清空所有已輸入的盤點紀錄（保留 141 筆藥品主檔）
           </button>
         </div>
       </div>
     </section>
-
   </main>
 
-  <!-- 底部固定導覽列 -->
   <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 shadow-lg">
     <div class="max-w-2xl mx-auto grid grid-cols-3 text-center">
-      <button onclick="switchTab('scan')" id="navBtn-scan" class="py-2.5 flex flex-col items-center justify-center text-emerald-600 font-bold text-xs">
-        <span class="text-lg">🔍</span>
-        <span>隨看隨盤</span>
+      <button type="button" onclick="switchTab('scan')" id="navBtn-scan" class="py-2.5 flex flex-col items-center justify-center text-emerald-600 font-bold text-xs">
+        <span class="text-lg">🔍</span><span>隨看隨盤</span>
       </button>
-      <button onclick="switchTab('list')" id="navBtn-list" class="py-2.5 flex flex-col items-center justify-center text-slate-400 font-bold text-xs">
-        <span class="text-lg">📋</span>
-        <span>盤點總覽</span>
+      <button type="button" onclick="switchTab('list')" id="navBtn-list" class="py-2.5 flex flex-col items-center justify-center text-slate-400 font-bold text-xs">
+        <span class="text-lg">📋</span><span>盤點總覽</span>
       </button>
-      <button onclick="switchTab('manage')" id="navBtn-manage" class="py-2.5 flex flex-col items-center justify-center text-slate-400 font-bold text-xs">
-        <span class="text-lg">📊</span>
-        <span>匯出與主檔</span>
+      <button type="button" onclick="switchTab('manage')" id="navBtn-manage" class="py-2.5 flex flex-col items-center justify-center text-slate-400 font-bold text-xs">
+        <span class="text-lg">📊</span><span>匯出與主檔</span>
       </button>
     </div>
   </nav>
 
-  <!-- 頂部浮動通知 Toast -->
   <div id="toastBox" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold border border-slate-700 transition-all"></div>
 
   <script>
@@ -286,138 +246,72 @@
     // 1. 白耳鼻喉科 141 筆完整內建藥品清單
     // =========================================================================
     const RAW_BUILTIN_DRUGS = [
-      { code: "TAMI", name: "易剋冒(公費)" },
-      { code: "TAMIO", name: "易剋冒(自費)" },
-      { code: "REL", name: "瑞樂沙(公費)" },
-      { code: "XOF", name: "紓伏效(自費)" },
-      { code: "ACY", name: "敵疱治" },
-      { code: "AM2", name: "安蒙西林250" },
-      { code: "AM5", name: "安蒙西林500" },
-      { code: "AU1", name: "諾快寧1000" },
-      { code: "AU6", name: "必百欣625" },
-      { code: "AU6", name: "諾快寧625" },
-      { code: "COM", name: "康保西林" },
-      { code: "BAK", name: "碩邁沛霖" },
-      { code: "DOX", name: "溫達黴素" },
-      { code: "CLA", name: "特立適" },
-      { code: "ZITO", name: "日舒" },
-      { code: "ZIT", name: "侒舒芯亞" },
-      { code: "KEF", name: "賜福力欣" },
-      { code: "CEF2", name: "賜福" },
-      { code: "CEF3", name: "賜信" },
-      { code: "NYS", name: "寧司泰定" },
-      { code: "CRA", name: "佐淨菌500" },
-      { code: "CRA", name: "樂伏菌500" },
-      { code: "CRA1", name: "雷弗欣100" },
-      { code: "OF1", name: "欣福100" },
-      { code: "OF2", name: "欣福200" },
-      { code: "MEBE", name: "疳福錠" },
-      { code: "FLU", name: "喜滅痛錠" },
-      { code: "FLU", name: "福康" },
-      { code: "IBU", name: "抑痛甜(橘)" },
-      { code: "IBU", name: "痛能(粉)" },
-      { code: "NAP", name: "拿撲僂炎" },
-      { code: "PON", name: "消濕痛" },
-      { code: "VOR2", name: "得克芬" },
-      { code: "VOR5", name: "克炎平" },
-      { code: "ACEW", name: "必安痛" },
-      { code: "ACEY", name: "安離痛" },
-      { code: "ACES", name: "可制痛" },
-      { code: "ACEC", name: "安離痛加強錠" },
-      { code: "ERG", name: "治偏頭痛" },
-      { code: "BRO", name: "勿炎" },
-      { code: "BRO", name: "撲炎喜" },
-      { code: "LYS", name: "來縮酵素" },
-      { code: "LYS", name: "縮酶" },
-      { code: "PRE", name: "保您免痛" },
-      { code: "PRE", name: "保樂爽" },
-      { code: "BET", name: "倍他沒酸" },
-      { code: "ALE", name: "飛敏耐" },
-      { code: "ALEO", name: "飛敏耐(排)" },
-      { code: "LOR", name: "柔他定" },
-      { code: "BILAO", name: "倍抗敏" },
-      { code: "CETO", name: "服敏" },
-      { code: "XYZO", name: "驅異樂(排)" },
-      { code: "BUC", name: "布克珍" },
-      { code: "POL", name: "特息敏" },
-      { code: "MEQ", name: "舒敏錠" },
-      { code: "MEE", name: "鹽酸消旋甲基麻黃" },
-      { code: "LON", name: "過敏寧(排)" },
-      { code: "NORS", name: "鼻爽" },
-      { code: "NORS", name: "鼻息敏" },
-      { code: "ASV", name: "咳舒" },
-      { code: "BEN", name: "諾咳" },
-      { code: "BES", name: "咳治得100" },
-      { code: "BES2", name: "剎咳得200" },
-      { code: "COD5", name: "可嗽平" },
-      { code: "COD6", name: "舒寧" },
-      { code: "MEDA", name: "嗽尚寧" },
-      { code: "NOS", name: "甜嗽" },
-      { code: "NOS", name: "抗咳" },
-      { code: "OXO", name: "安咳" },
-      { code: "RES2", name: "抑咳" },
-      { code: "RES3", name: "益咳靜" },
-      { code: "RES5", name: "立舒咳" },
-      { code: "EUF", name: "優咳" },
-      { code: "BIS", name: "定舒咳" },
-      { code: "BIS", name: "普拿咳" },
-      { code: "AMB", name: "平痰息" },
-      { code: "AMB", name: "安舒錠" },
-      { code: "CAR", name: "甜痰舒" },
-      { code: "CAR", name: "祛痰平" },
-      { code: "ACTL", name: "速痰(包)" },
-      { code: "ACTL", name: "牧舒爾(橘)" },
-      { code: "ACTS1", name: "牧舒爾(藍)" },
-      { code: "ACTO", name: "愛克痰(發泡錠)" },
-      { code: "BER", name: "菲諾特洛" },
-      { code: "DIP", name: "二羥丙基茶鹼" },
-      { code: "MEP", name: "麥咳喘" },
-      { code: "THO", name: "喘克" },
-      { code: "THO", name: "布隆可林" },
-      { code: "THO", name: "氨基非林" },
-      { code: "SIN4", name: "萬剋喘" },
-      { code: "SIN4", name: "欣流" },
-      { code: "SIN5", name: "欣流" },
-      { code: "SIN10", name: "息喘" },
-      { code: "DUC", name: "秘瀉樂" },
-      { code: "MGO", name: "氧化鎂" },
-      { code: "SEN", name: "快便" },
-      { code: "SEN", name: "秘通樂" },
-      { code: "BUS", name: "鎮痙適" },
-      { code: "MOP", name: "胃默適" },
-      { code: "MOT", name: "道喜" },
-      { code: "MOT", name: "鎮吐寧" },
-      { code: "IMO", name: "樂止" },
-      { code: "KBT", name: "克瀉寧" },
-      { code: "STR", name: "芬康胃" },
-      { code: "MYL", name: "泰胃" },
-      { code: "BIO", name: "乳樂明" },
-      { code: "GAS", name: "瓦斯敏" },
-      { code: "FAM", name: "法瑪鎮" },
-      { code: "CIM", name: "恩胃" },
-      { code: "CIM", name: "好胃明" },
-      { code: "TAK", name: "逸潰定" },
-      { code: "PANO", name: "瘍康" },
-      { code: "BCO", name: "維生素B群" },
-      { code: "MEC", name: "暈素寧" },
-      { code: "MEC", name: "美克旅鎮" },
-      { code: "CEP", name: "振暈" },
-      { code: "CEP", name: "世華妥" },
-      { code: "EUC", name: "暢力" },
-      { code: "HEM", name: "旺血" },
-      { code: "MER", name: "可克暈" },
-      { code: "SIB", name: "福腦淨" },
-      { code: "TRA", name: "血必克" },
-      { code: "HPS", name: "肌背舒" },
-      { code: "SOL", name: "舒可樂" },
-      { code: "SOMA", name: "舒肌痛" },
-      { code: "XAN", name: "安柏寧" },
-      { code: "CLON", name: "可那平" },
-      { code: "ZOLO", name: "柔拍" },
-      { code: "TRAMA", name: "服安痛" },
-      { code: "ECOV", name: "易樂潔" },
-      { code: "MOTA", name: "冬培力" },
-      { code: "VORA", name: "非炎" },
+      { code: "TAMI", name: "易剋冒(公費)" }, { code: "TAMIO", name: "易剋冒(自費)" },
+      { code: "REL", name: "瑞樂沙(公費)" }, { code: "XOF", name: "紓伏效(自費)" },
+      { code: "ACY", name: "敵疱治" }, { code: "AM2", name: "安蒙西林250" },
+      { code: "AM5", name: "安蒙西林500" }, { code: "AU1", name: "諾快寧1000" },
+      { code: "AU6", name: "必百欣625" }, { code: "AU6", name: "諾快寧625" },
+      { code: "COM", name: "康保西林" }, { code: "BAK", name: "碩邁沛霖" },
+      { code: "DOX", name: "溫達黴素" }, { code: "CLA", name: "特立適" },
+      { code: "ZITO", name: "日舒" }, { code: "ZIT", name: "侒舒芯亞" },
+      { code: "KEF", name: "賜福力欣" }, { code: "CEF2", name: "賜福" },
+      { code: "CEF3", name: "賜信" }, { code: "NYS", name: "寧司泰定" },
+      { code: "CRA", name: "佐淨菌500" }, { code: "CRA", name: "樂伏菌500" },
+      { code: "CRA1", name: "雷弗欣100" }, { code: "OF1", name: "欣福100" },
+      { code: "OF2", name: "欣福200" }, { code: "MEBE", name: "疳福錠" },
+      { code: "FLU", name: "喜滅痛錠" }, { code: "FLU", name: "福康" },
+      { code: "IBU", name: "抑痛甜(橘)" }, { code: "IBU", name: "痛能(粉)" },
+      { code: "NAP", name: "拿撲僂炎" }, { code: "PON", name: "消濕痛" },
+      { code: "VOR2", name: "得克芬" }, { code: "VOR5", name: "克炎平" },
+      { code: "ACEW", name: "必安痛" }, { code: "ACEY", name: "安離痛" },
+      { code: "ACES", name: "可制痛" }, { code: "ACEC", name: "安離痛加強錠" },
+      { code: "ERG", name: "治偏頭痛" }, { code: "BRO", name: "勿炎" },
+      { code: "BRO", name: "撲炎喜" }, { code: "LYS", name: "來縮酵素" },
+      { code: "LYS", name: "縮酶" }, { code: "PRE", name: "保您免痛" },
+      { code: "PRE", name: "保樂爽" }, { code: "BET", name: "倍他沒酸" },
+      { code: "ALE", name: "飛敏耐" }, { code: "ALEO", name: "飛敏耐(排)" },
+      { code: "LOR", name: "柔他定" }, { code: "BILAO", name: "倍抗敏" },
+      { code: "CETO", name: "服敏" }, { code: "XYZO", name: "驅異樂(排)" },
+      { code: "BUC", name: "布克珍" }, { code: "POL", name: "特息敏" },
+      { code: "MEQ", name: "舒敏錠" }, { code: "MEE", name: "鹽酸消旋甲基麻黃" },
+      { code: "LON", name: "過敏寧(排)" }, { code: "NORS", name: "鼻爽" },
+      { code: "NORS", name: "鼻息敏" }, { code: "ASV", name: "咳舒" },
+      { code: "BEN", name: "諾咳" }, { code: "BES", name: "咳治得100" },
+      { code: "BES2", name: "剎咳得200" }, { code: "COD5", name: "可嗽平" },
+      { code: "COD6", name: "舒寧" }, { code: "MEDA", name: "嗽尚寧" },
+      { code: "NOS", name: "甜嗽" }, { code: "NOS", name: "抗咳" },
+      { code: "OXO", name: "安咳" }, { code: "RES2", name: "抑咳" },
+      { code: "RES3", name: "益咳靜" }, { code: "RES5", name: "立舒咳" },
+      { code: "EUF", name: "優咳" }, { code: "BIS", name: "定舒咳" },
+      { code: "BIS", name: "普拿咳" }, { code: "AMB", name: "平痰息" },
+      { code: "AMB", name: "安舒錠" }, { code: "CAR", name: "甜痰舒" },
+      { code: "CAR", name: "祛痰平" }, { code: "ACTL", name: "速痰(包)" },
+      { code: "ACTL", name: "牧舒爾(橘)" }, { code: "ACTS1", name: "牧舒爾(藍)" },
+      { code: "ACTO", name: "愛克痰(發泡錠)" }, { code: "BER", name: "菲諾特洛" },
+      { code: "DIP", name: "二羥丙基茶鹼" }, { code: "MEP", name: "麥咳喘" },
+      { code: "THO", name: "喘克" }, { code: "THO", name: "布隆可林" },
+      { code: "THO", name: "氨基非林" }, { code: "SIN4", name: "萬剋喘" },
+      { code: "SIN4", name: "欣流" }, { code: "SIN5", name: "欣流" },
+      { code: "SIN10", name: "息喘" }, { code: "DUC", name: "秘瀉樂" },
+      { code: "MGO", name: "氧化鎂" }, { code: "SEN", name: "快便" },
+      { code: "SEN", name: "秘通樂" }, { code: "BUS", name: "鎮痙適" },
+      { code: "MOP", name: "胃默適" }, { code: "MOT", name: "道喜" },
+      { code: "MOT", name: "鎮吐寧" }, { code: "IMO", name: "樂止" },
+      { code: "KBT", name: "克瀉寧" }, { code: "STR", name: "芬康胃" },
+      { code: "MYL", name: "泰胃" }, { code: "BIO", name: "乳樂明" },
+      { code: "GAS", name: "瓦斯敏" }, { code: "FAM", name: "法瑪鎮" },
+      { code: "CIM", name: "恩胃" }, { code: "CIM", name: "好胃明" },
+      { code: "TAK", name: "逸潰定" }, { code: "PANO", name: "瘍康" },
+      { code: "BCO", name: "維生素B群" }, { code: "MEC", name: "暈素寧" },
+      { code: "MEC", name: "美克旅鎮" }, { code: "CEP", name: "振暈" },
+      { code: "CEP", name: "世華妥" }, { code: "EUC", name: "暢力" },
+      { code: "HEM", name: "旺血" }, { code: "MER", name: "可克暈" },
+      { code: "SIB", name: "福腦淨" }, { code: "TRA", name: "血必克" },
+      { code: "HPS", name: "肌背舒" }, { code: "SOL", name: "舒可樂" },
+      { code: "SOMA", name: "舒肌痛" }, { code: "XAN", name: "安柏寧" },
+      { code: "CLON", name: "可那平" }, { code: "ZOLO", name: "柔拍" },
+      { code: "TRAMA", name: "服安痛" }, { code: "ECOV", name: "易樂潔" },
+      { code: "MOTA", name: "冬培力" }, { code: "VORA", name: "非炎" },
       { code: "17", name: "Erythromycin 250mg/cap" },
       { code: "22", name: "Hexoline 0.5mg/tab" },
       { code: "25", name: "Mebhydroline 50mg/tab" },
@@ -438,15 +332,12 @@
     }
 
     const BUILTIN_DRUGS = normalizeDrugList(RAW_BUILTIN_DRUGS);
-    // 嚴格鎖定 STORAGE_KEY，確保手機既有盤點資料 100% 向下相容不遺失
+    // 嚴格鎖定 STORAGE_KEY，確保手機既有盤點資料 100% 保留
     const STORAGE_KEY = "bai_ent_inventory_v4_official_141";
 
     function getTodayDateString() {
       const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
 
     let appState = {
@@ -461,11 +352,23 @@
     let editingBatches = [];
     let currentListFilter = "ALL";
 
-    // 強制穿透快取重新載入最新版程式碼（保留 localStorage 既有盤點資料）
-    function forceHardReload() {
-      if (confirm("確定要強制更新系統版本嗎？（您手機已輸入的盤點資料會完整保留）")) {
-        const timestamp = new Date().getTime();
-        window.location.href = window.location.pathname + "?v=" + timestamp;
+    // 強化版：強制穿透快取重新載入最新版程式碼（保留 localStorage 既有盤點資料）
+    async function forceHardReload() {
+      if (!confirm("確定要強制更新系統版本嗎？（您手機已輸入的盤點資料會 100% 完整保留）")) return;
+      showToast("🔄 正在穿透快取拉取最新版本...");
+      try {
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        const cleanUrl = window.location.origin + window.location.pathname;
+        await fetch(cleanUrl + "?bust=" + Date.now(), {
+          cache: "no-store",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+        });
+        window.location.replace(cleanUrl + "?v=" + Date.now());
+      } catch (e) {
+        window.location.href = window.location.pathname + "?v=" + Date.now();
       }
     }
 
@@ -485,7 +388,7 @@
           appState.records = parsed.records || {};
           appState.recentIds = Array.isArray(parsed.recentIds) ? parsed.recentIds : ["AM5__安蒙西林500", "COM__康保西林"];
         } catch (e) {
-          console.error("讀取快取失敗，使用預設狀態", e);
+          console.error("讀取快取失敗", e);
         }
       } else {
         saveState();
@@ -496,9 +399,7 @@
       renderQuickDrugPills();
 
       const initialDrug = appState.drugs.find(d => d.id === currentSelectedId) || appState.drugs[0];
-      if (initialDrug) {
-        selectDrugById(initialDrug.id, true);
-      }
+      if (initialDrug) selectDrugById(initialDrug.id, true);
       renderOverviewList();
     }
 
@@ -508,17 +409,12 @@
       if (badge) badge.textContent = `內建 ${appState.drugs.length} 品項`;
     }
 
-    // =========================================================================
-    // 3. 頂部「盤點日期」與「預設樓層 (1樓/3樓)」切換
-    // =========================================================================
     function onWorkingDateChange() {
       const val = document.getElementById("workingDateInput").value;
       if (val) {
         appState.workingDate = val;
         saveState();
-        if (currentSelectedId) {
-          renderActiveDrugCard(currentSelectedId);
-        }
+        if (currentSelectedId) renderActiveDrugCard(currentSelectedId);
         showToast(`📅 已切換盤點作業日期為：${val}`);
       }
     }
@@ -543,26 +439,20 @@
     }
 
     // =========================================================================
-    // 4. 數量與樓層計算核心邏輯（排除「開」等文字，僅加總純數字）
+    // 3. 數量與樓層計算邏輯（排除「開」等文字）
     // =========================================================================
     function isStrictNumericQty(val) {
       if (val === null || val === undefined) return false;
       const str = String(val).trim();
-      if (str === "") return false;
-      return /^-?\d+(\.\d+)?$/.test(str);
+      return str !== "" && /^-?\d+(\.\d+)?$/.test(str);
     }
 
     function calculateBatchStats(batches) {
-      let totalNumeric = 0;
-      let floor1Numeric = 0;
-      let floor3Numeric = 0;
-      let textNotes = [];
-
+      let totalNumeric = 0, floor1Numeric = 0, floor3Numeric = 0, textNotes = [];
       (batches || []).forEach(b => {
         const qStr = String(b.qty ?? "").trim();
         const floor = b.floor === "3樓" ? "3樓" : "1樓";
-        if (qStr === "") return;
-
+        if (!qStr) return;
         if (isStrictNumericQty(qStr)) {
           const num = parseFloat(qStr);
           totalNumeric += num;
@@ -572,63 +462,43 @@
           textNotes.push(`${floor}:${qStr}(效期${b.expiry || "未填"})`);
         }
       });
-
-      return {
-        totalNumeric,
-        floor1Numeric,
-        floor3Numeric,
-        textNotes
-      };
+      return { totalNumeric, floor1Numeric, floor3Numeric, textNotes };
     }
 
     // =========================================================================
-    // 5. 強化版連續語音控制：強制銷毀重建實例，確保連續盤點 141 項絕不卡死
+    // 4. Argon v4.6 根治版語音引擎：同步手勢啟動 ＋ 單句自動釋放 ＋ 零死鎖狀態機
     // =========================================================================
-    let recognitionInstance = null;
+    let activeRecognition = null;
     let isVoiceListening = false;
-    let manualStopRequested = false;
+    let latestTranscript = "";
+    let autoSettleTimer = null;
+    let startupWatchdogTimer = null;
 
     function normalizeVoiceTranscript(rawText) {
       if (!rawText) return "";
-      let s = String(rawText).replace(/[。，、？ ！?.,\s]/g, "").trim();
-
-      s = s.replace(/必百欣/g, "__BIBAIXIN__");
-      s = s.replace(/二羥/g, "__ERQIANG__");
+      let s = String(rawText).replace(/[。，、？ ！?.,\s\-_]/g, "").trim();
+      s = s.replace(/必百欣/g, "__BIBAIXIN__").replace(/二羥/g, "__ERQIANG__");
 
       const phraseMap = [
-        [/一千/g, "1000"],
-        [/一零零零/g, "1000"],
+        [/一千|一零零零/g, "1000"],
         [/六百二十五|六二五/g, "625"],
         [/五百|五零零/g, "500"],
         [/兩百五十|二百五十|兩百五|二百五|二五零/g, "250"],
         [/兩百|二百|二零零/g, "200"],
         [/一百五十|一百五|一五零/g, "150"],
         [/一百|一零零/g, "100"],
-        [/三十八|三八/g, "38"],
-        [/三十六|三六/g, "36"],
-        [/三十/g, "30"],
-        [/二十九|二九/g, "29"],
-        [/二十七|二七/g, "27"],
-        [/二十五|二五/g, "25"],
-        [/二十二|二二/g, "22"],
-        [/十七|一七/g, "17"],
-        [/十/g, "10"]
+        [/三十八|三八/g, "38"], [/三十六|三六/g, "36"], [/三十/g, "30"],
+        [/二十九|二九/g, "29"], [/二十七|二七/g, "27"], [/二十五|二五/g, "25"],
+        [/二十二|二二/g, "22"], [/十七|一七/g, "17"], [/十/g, "10"]
       ];
-
-      phraseMap.forEach(([regex, numStr]) => {
-        s = s.replace(regex, numStr);
-      });
+      phraseMap.forEach(([regex, numStr]) => { s = s.replace(regex, numStr); });
 
       const singleDigitMap = {
         "零": "0", "一": "1", "二": "2", "兩": "2", "三": "3",
         "四": "4", "五": "5", "六": "6", "七": "7", "八": "8", "九": "9"
       };
       s = s.replace(/[零一二兩三四五六七八九]/g, ch => singleDigitMap[ch] ?? ch);
-
-      s = s.replace(/__BIBAIXIN__/g, "必百欣");
-      s = s.replace(/__ERQIANG__/g, "二羥");
-
-      return s;
+      return s.replace(/__BIBAIXIN__/g, "必百欣").replace(/__ERQIANG__/g, "二羥");
     }
 
     function updateVoiceControlUI(state, message) {
@@ -643,38 +513,62 @@
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm transition";
         startBtnText.textContent = "啟動麥克風中...";
         stopBtn.disabled = false;
-        stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-sm transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-50 text-xs flex items-center justify-between gap-2 transition-all";
+        stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-rose-600 text-white shadow-sm transition";
+        statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-3 h-3 rounded-full bg-amber-500 inline-block shrink-0 animate-ping";
         statusText.className = "font-black text-amber-900";
-        statusText.textContent = message || "🟡 正在初始化麥克風硬體...";
+        statusText.textContent = message || "🟡 正在啟動麥克風...";
       } else if (state === "LISTENING") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 text-white recording-pulse transition";
-        startBtnText.textContent = "正在收音中...";
+        startBtnText.textContent = "收音中 (點此重講)";
         stopBtn.disabled = false;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-md transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-xs flex items-center justify-between gap-2 transition-all";
+        statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 inline-block shrink-0 animate-pulse";
         statusText.className = "font-black text-emerald-900";
-        statusText.textContent = message || "🟢 綠燈收音中！請說出下一筆藥名，講完請點「⏹️ 停止接收並辨識」";
+        statusText.textContent = message || "🟢 綠燈收音中！請說出藥代或藥名（講完自動鎖定或按 ⏹️ 停止）";
       } else if (state === "DONE") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
-        startBtnText.textContent = "開始接收語音";
+        startBtnText.textContent = "開始接收語音 (下一筆)";
         stopBtn.disabled = true;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-slate-200 text-slate-400 cursor-not-allowed transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs flex items-center justify-between gap-2 transition-all";
+        statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block shrink-0";
         statusText.className = "font-bold text-indigo-900";
-        statusText.textContent = message || "✅ 辨識完成！可直接隨時點擊「🎤 開始接收語音」盤點下一筆";
+        statusText.textContent = message || "✅ 語音已鎖定並釋放麥克風！可隨時點「🎤 開始」講下一筆";
       } else {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
         startBtnText.textContent = "開始接收語音";
         stopBtn.disabled = true;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-slate-200 text-slate-400 cursor-not-allowed transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all";
+        statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
         statusText.className = "font-bold text-slate-600";
-        statusText.textContent = message || "語音待命：點擊「🎤 開始接收語音」，連續盤點不卡死";
+        statusText.textContent = message || "語音待命：點「🎤 開始接收語音」亮綠燈後說出藥名或藥代";
+      }
+    }
+
+    function detachEvents(rec) {
+      if (!rec) return;
+      rec.onstart = null;
+      rec.onresult = null;
+      rec.onerror = null;
+      rec.onend = null;
+      rec.onspeechend = null;
+      rec.onaudioend = null;
+    }
+
+    // 當點選輸入框或儲存按鈕時，自動安全釋放麥克風，避免與手機鍵盤搶硬體通道
+    function safelyReleaseMic() {
+      clearTimeout(autoSettleTimer);
+      clearTimeout(startupWatchdogTimer);
+      if (activeRecognition) {
+        const rec = activeRecognition;
+        activeRecognition = null;
+        isVoiceListening = false;
+        detachEvents(rec);
+        try { rec.stop(); } catch (e) {}
+        updateVoiceControlUI("IDLE", "語音待命：麥克風已安全釋放，隨時可點「🎤 開始接收語音」盤點下一筆");
       }
     }
 
@@ -685,100 +579,173 @@
         return;
       }
 
-      // 1. 強制完全銷毀舊實例與釋放硬體串流
-      if (recognitionInstance) {
-        try {
-          manualStopRequested = true;
-          recognitionInstance.abort();
-        } catch (e) {}
-        recognitionInstance = null;
+      clearTimeout(autoSettleTimer);
+      clearTimeout(startupWatchdogTimer);
+
+      // 若前一個實例尚未關閉，先解除事件綁定並單獨呼叫 stop()（嚴禁同時呼叫 stop 與 abort）
+      if (activeRecognition) {
+        const prev = activeRecognition;
+        activeRecognition = null;
+        isVoiceListening = false;
+        detachEvents(prev);
+        try { prev.stop(); } catch (e) {}
       }
 
+      // 收起手機虛擬鍵盤，釋放系統音訊焦點
+      if (document.activeElement && typeof document.activeElement.blur === "function") {
+        document.activeElement.blur();
+      }
+
+      latestTranscript = "";
       const searchInput = document.getElementById("searchInput");
       searchInput.value = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
 
-      manualStopRequested = false;
-      updateVoiceControlUI("STARTING", "🟡 正在重置麥克風通道...");
+      updateVoiceControlUI("STARTING", "🟡 正在啟動麥克風...");
 
-      // 2. 加入短暫延遲確保硬體完全釋放後再建立新實例
-      setTimeout(() => {
-        const recognition = new SpeechRecognition();
-        recognitionInstance = recognition;
-        recognition.lang = "zh-TW";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
+      // 關鍵修正 1：在點擊事件同步執行緒內直接建立並呼叫 start()，絕不使用 setTimeout
+      const recognition = new SpeechRecognition();
+      activeRecognition = recognition;
+      recognition.lang = "zh-TW";
+      // 關鍵修正 2：設為 continuous = false，講完單筆藥名後自動釋放手機麥克風鎖
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => {
-          isVoiceListening = true;
-          updateVoiceControlUI("LISTENING", "🟢 收音中！請說出藥名（講完請點右側「⏹️ 停止」）");
-        };
+      recognition.onstart = () => {
+        if (activeRecognition !== recognition) return;
+        clearTimeout(startupWatchdogTimer);
+        isVoiceListening = true;
+        updateVoiceControlUI("LISTENING", "🟢 綠燈收音中！請說出藥代或藥名（如 AM5、ASV、SEN）");
+      };
 
-        recognition.onresult = (event) => {
-          let combinedRaw = "";
-          for (let i = 0; i < event.results.length; i++) {
-            combinedRaw += event.results[i][0].transcript;
-          }
+      recognition.onresult = (event) => {
+        if (activeRecognition !== recognition) return;
+        if (!event.results || event.results.length === 0) return;
 
-          const normalized = normalizeVoiceTranscript(combinedRaw);
-          if (normalized) {
-            searchInput.value = normalized;
-            handleSearchInput();
-            updateVoiceControlUI(
-              "LISTENING",
-              `🟢 聽取中：「${combinedRaw}」➔ 轉譯：「${normalized}」`
-            );
-          }
-        };
+        // 關鍵修正 3：只讀取最新一個語音片段，絕不將前一次的 AM5 與這次的 ASV 串接
+        const lastResult = event.results[event.results.length - 1];
+        const rawChunk = lastResult[0].transcript || "";
+        const isFinal = Boolean(lastResult.isFinal);
+        const normalized = normalizeVoiceTranscript(rawChunk);
 
-        recognition.onerror = (event) => {
-          if (manualStopRequested) return;
-          console.warn("Speech error:", event.error);
-          isVoiceListening = false;
-          updateVoiceControlUI("IDLE", `⚠️ 收音中斷 (${event.error})，請再次點擊「🎤 開始」`);
-          recognitionInstance = null;
-        };
+        if (normalized) {
+          latestTranscript = normalized;
+          searchInput.value = normalized;
+          document.getElementById("clearSearchBtn").classList.remove("hidden");
+          previewDropdownOnly(normalized);
+          updateVoiceControlUI(
+            "LISTENING",
+            `🟢 聽取中：「${rawChunk.trim()}」➔ 轉譯：「${normalized}」`
+          );
 
-        recognition.onend = () => {
-          isVoiceListening = false;
-          const currentVal = document.getElementById("searchInput").value.trim();
-          if (currentVal) {
-            finalizeVoiceSelection(currentVal);
+          clearTimeout(autoSettleTimer);
+          if (isFinal) {
+            // 語音引擎已判定講完，立即正常結束並鎖定藥品
+            stopVoiceRecognition();
           } else {
-            updateVoiceControlUI("IDLE", "⏹️ 已停止收音。點擊「🎤 開始接收語音」可繼續盤點");
+            // 若講完後停頓 650ms 無新聲音，自動幫使用者結束收音並釋放麥克風！
+            autoSettleTimer = setTimeout(() => {
+              if (activeRecognition === recognition && latestTranscript) {
+                stopVoiceRecognition();
+              }
+            }, 650);
           }
-          recognitionInstance = null;
-        };
-
-        try {
-          recognition.start();
-        } catch (err) {
-          console.error(err);
-          isVoiceListening = false;
-          updateVoiceControlUI("IDLE", "⚠️ 啟動失敗，請再次點擊「🎤 開始接收語音」");
-          recognitionInstance = null;
         }
-      }, 150);
+      };
+
+      recognition.onerror = (event) => {
+        if (activeRecognition !== recognition) return;
+        clearTimeout(autoSettleTimer);
+        clearTimeout(startupWatchdogTimer);
+        isVoiceListening = false;
+        const errCode = event.error || "unknown";
+        detachEvents(recognition);
+        activeRecognition = null;
+
+        if (latestTranscript) {
+          finalizeVoiceSelection(latestTranscript);
+        } else if (errCode === "no-speech") {
+          updateVoiceControlUI("IDLE", "⚠️ 未偵測到語音（麥克風已安全釋放，請再點一次「🎤 開始接收語音」）");
+        } else if (errCode === "not-allowed") {
+          updateVoiceControlUI("IDLE", "⚠️ 麥克風權限被拒，請允許瀏覽器使用麥克風");
+        } else {
+          updateVoiceControlUI("IDLE", `⚠️ 語音通道已重置 (${errCode})，請再點一次「🎤 開始接收語音」`);
+        }
+      };
+
+      recognition.onend = () => {
+        if (activeRecognition !== recognition) return;
+        clearTimeout(autoSettleTimer);
+        clearTimeout(startupWatchdogTimer);
+        isVoiceListening = false;
+        detachEvents(recognition);
+        activeRecognition = null;
+
+        const finalVal = (latestTranscript || document.getElementById("searchInput").value).trim();
+        if (finalVal) {
+          finalizeVoiceSelection(finalVal);
+        } else {
+          updateVoiceControlUI("IDLE", "⏹️ 已停止收音並釋放麥克風。隨時可點「🎤 開始接收語音」");
+        }
+      };
+
+      try {
+        recognition.start();
+        // 看門狗保護：若 2.5 秒內手機未啟動 onstart，自動釋放重置
+        startupWatchdogTimer = setTimeout(() => {
+          if (activeRecognition === recognition && !isVoiceListening) {
+            detachEvents(recognition);
+            try { recognition.stop(); } catch (e) {}
+            activeRecognition = null;
+            updateVoiceControlUI("IDLE", "⚠️ 麥克風通道已自動重置，請再點一次「🎤 開始接收語音」");
+          }
+        }, 2500);
+      } catch (err) {
+        clearTimeout(startupWatchdogTimer);
+        detachEvents(recognition);
+        activeRecognition = null;
+        isVoiceListening = false;
+        updateVoiceControlUI("IDLE", "⚠️ 啟動重試中，請再點一次「🎤 開始接收語音」");
+      }
     }
 
-    function stopVoiceRecognition(isManualClick = true) {
-      manualStopRequested = isManualClick;
-      if (recognitionInstance) {
-        try {
-          recognitionInstance.stop();
-          recognitionInstance.abort();
-        } catch (e) {}
+    function stopVoiceRecognition() {
+      clearTimeout(autoSettleTimer);
+      clearTimeout(startupWatchdogTimer);
+      const currentVal = (latestTranscript || document.getElementById("searchInput").value).trim();
+
+      if (activeRecognition) {
+        const rec = activeRecognition;
+        activeRecognition = null;
+        isVoiceListening = false;
+        detachEvents(rec);
+        // 關鍵修正 4：只呼叫 stop()，絕不混用 abort()，讓手機作業系統乾淨回收麥克風
+        try { rec.stop(); } catch (e) {}
       }
+
       isVoiceListening = false;
-      const currentVal = document.getElementById("searchInput").value.trim();
       if (currentVal) {
         finalizeVoiceSelection(currentVal);
       } else {
-        updateVoiceControlUI("IDLE", "⏹️ 已停止收音。隨時可點擊「🎤 開始接收語音」盤點下一筆");
+        updateVoiceControlUI("IDLE", "⏹️ 已停止收音並釋放麥克風。隨時可點「🎤 開始接收語音」盤點下一筆");
       }
-      recognitionInstance = null;
+    }
+
+    function previewDropdownOnly(rawQuery) {
+      const dropdown = document.getElementById("searchResultsDropdown");
+      if (!rawQuery) {
+        dropdown.classList.add("hidden");
+        return;
+      }
+      const { combined } = getMatchedDrugs(rawQuery);
+      if (combined.length === 0) {
+        dropdown.innerHTML = `<div class="p-3 text-xs text-rose-600 font-bold bg-rose-50">⚠️ 查無「${escapeHtml(rawQuery)}」</div>`;
+        dropdown.classList.remove("hidden");
+        return;
+      }
+      renderDropdownItems(combined);
     }
 
     function finalizeVoiceSelection(queryText) {
@@ -787,21 +754,23 @@
         const bestMatch = exactCodeMatches[0] || exactNameMatches[0] || combined[0];
         const shouldCloseDropdown = combined.length === 1;
         selectDrugById(bestMatch.id, shouldCloseDropdown);
+        if (!shouldCloseDropdown) renderDropdownItems(combined);
         updateVoiceControlUI(
           "DONE",
-          `✅ 已鎖定：「${queryText}」➔ 【${bestMatch.code} ${bestMatch.name}】（可點「🎤 開始」繼續下一筆）`
+          `✅ 已鎖定：「${queryText}」➔【${bestMatch.code} ${bestMatch.name}】（麥克風已釋放，可直接點「🎤 開始」講下一筆）`
         );
         showToast(`🎤 語音已鎖定：${bestMatch.code} ${bestMatch.name}`);
       } else {
+        previewDropdownOnly(queryText);
         updateVoiceControlUI(
           "DONE",
-          `⚠️ 查無「${queryText}」，141筆清單無此品項`
+          `⚠️ 語音收到「${queryText}」，141 筆清單無此品項（請點「🎤 開始」重講）`
         );
       }
     }
 
     // =========================================================================
-    // 6. 階梯式精準搜尋與快速選藥
+    // 5. 階梯式精準搜尋與快速選藥
     // =========================================================================
     function renderQuickDrugPills() {
       const container = document.getElementById("quickDrugPills");
@@ -809,7 +778,6 @@
 
       const pillDrugs = [];
       const seen = new Set();
-
       (appState.recentIds || []).forEach(id => {
         const found = appState.drugs.find(d => d.id === id);
         if (found && !seen.has(found.id)) {
@@ -817,7 +785,6 @@
           pillDrugs.push(found);
         }
       });
-
       for (const d of appState.drugs) {
         if (pillDrugs.length >= 8) break;
         if (!seen.has(d.id)) {
@@ -857,17 +824,12 @@
         !exactCodeMatches.includes(d) && d.name.toUpperCase() === qUpper
       );
       const prefixCodeMatches = appState.drugs.filter(d =>
-        !exactCodeMatches.includes(d) &&
-        !exactNameMatches.includes(d) &&
-        d.code.toUpperCase().startsWith(qUpper)
+        !exactCodeMatches.includes(d) && !exactNameMatches.includes(d) && d.code.toUpperCase().startsWith(qUpper)
       );
       const substringMatches = appState.drugs.filter(d =>
-        !exactCodeMatches.includes(d) &&
-        !exactNameMatches.includes(d) &&
-        !prefixCodeMatches.includes(d) &&
+        !exactCodeMatches.includes(d) && !exactNameMatches.includes(d) && !prefixCodeMatches.includes(d) &&
         (d.name.toUpperCase().includes(qUpper) || d.code.toUpperCase().includes(qUpper))
       );
-
       return {
         exactCodeMatches,
         exactNameMatches,
@@ -875,40 +837,9 @@
       };
     }
 
-    function handleSearchInput() {
-      const inputEl = document.getElementById("searchInput");
-      const rawQuery = inputEl.value.trim();
-      const clearBtn = document.getElementById("clearSearchBtn");
+    function renderDropdownItems(list) {
       const dropdown = document.getElementById("searchResultsDropdown");
-
-      if (!rawQuery) {
-        clearBtn.classList.add("hidden");
-        dropdown.classList.add("hidden");
-        return;
-      }
-      clearBtn.classList.remove("hidden");
-
-      const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(rawQuery);
-
-      if (combined.length === 0) {
-        dropdown.innerHTML = `
-          <div class="p-3 text-xs text-rose-600 font-bold bg-rose-50">
-            ⚠️ 查無「${escapeHtml(rawQuery)}」（系統嚴格限制僅顯示您提供的 141 筆藥品清單）
-          </div>
-        `;
-        dropdown.classList.remove("hidden");
-        return;
-      }
-
-      if (exactCodeMatches.length >= 1) {
-        selectDrugById(exactCodeMatches[0].id, false);
-      } else if (exactNameMatches.length >= 1) {
-        selectDrugById(exactNameMatches[0].id, false);
-      } else if (combined.length === 1) {
-        selectDrugById(combined[0].id, false);
-      }
-
-      dropdown.innerHTML = combined.slice(0, 25).map(d => {
+      dropdown.innerHTML = list.slice(0, 25).map(d => {
         const rec = appState.records[d.id];
         const stats = rec ? calculateBatchStats(rec.batches) : null;
         const isCurrent = d.id === currentSelectedId;
@@ -933,35 +864,63 @@
       dropdown.classList.remove("hidden");
     }
 
+    function handleSearchInput() {
+      const inputEl = document.getElementById("searchInput");
+      const rawQuery = inputEl.value.trim();
+      const clearBtn = document.getElementById("clearSearchBtn");
+      const dropdown = document.getElementById("searchResultsDropdown");
+
+      if (!rawQuery) {
+        clearBtn.classList.add("hidden");
+        dropdown.classList.add("hidden");
+        return;
+      }
+      clearBtn.classList.remove("hidden");
+
+      const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(rawQuery);
+      if (combined.length === 0) {
+        dropdown.innerHTML = `<div class="p-3 text-xs text-rose-600 font-bold bg-rose-50">⚠️ 查無「${escapeHtml(rawQuery)}」（系統僅顯示內建 141 筆藥品清單）</div>`;
+        dropdown.classList.remove("hidden");
+        return;
+      }
+
+      if (exactCodeMatches.length >= 1) {
+        selectDrugById(exactCodeMatches[0].id, false);
+      } else if (exactNameMatches.length >= 1) {
+        selectDrugById(exactNameMatches[0].id, false);
+      } else if (combined.length === 1) {
+        selectDrugById(combined[0].id, false);
+      }
+      renderDropdownItems(combined);
+    }
+
     function handleSearchKeydown(event) {
       if (event.key === "Enter") {
         event.preventDefault();
         const rawQuery = document.getElementById("searchInput").value.trim();
         if (!rawQuery) return;
         const { combined } = getMatchedDrugs(rawQuery);
-        if (combined.length > 0) {
-          selectDrugById(combined[0].id, true);
-        }
+        if (combined.length > 0) selectDrugById(combined[0].id, true);
       }
     }
 
     function clearSearch() {
+      safelyReleaseMic();
       const inputEl = document.getElementById("searchInput");
       inputEl.value = "";
+      latestTranscript = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
       inputEl.focus();
     }
 
     // =========================================================================
-    // 7. 選中藥品並渲染專屬盤點卡
+    // 6. 選中藥品並渲染專屬盤點卡
     // =========================================================================
     function selectDrugById(id, closeDropdown = true) {
       const drug = appState.drugs.find(d => d.id === id);
       if (!drug) return;
-
       currentSelectedId = drug.id;
-
       appState.recentIds = [drug.id, ...(appState.recentIds || []).filter(x => x !== drug.id)].slice(0, 8);
       saveState();
 
@@ -977,9 +936,7 @@
           expiry: String(b.expiry ?? "")
         }));
       } else {
-        editingBatches = [
-          { floor: appState.defaultFloor, qty: "", expiry: "" }
-        ];
+        editingBatches = [{ floor: appState.defaultFloor, qty: "", expiry: "" }];
       }
 
       renderQuickDrugPills();
@@ -989,10 +946,7 @@
     function renderActiveDrugCard(id) {
       const drug = appState.drugs.find(d => d.id === id);
       const container = document.getElementById("activeDrugCardContainer");
-      if (!drug) {
-        container.innerHTML = "";
-        return;
-      }
+      if (!drug) { container.innerHTML = ""; return; }
 
       const rec = appState.records[drug.id];
       const liveStats = calculateBatchStats(editingBatches);
@@ -1009,9 +963,7 @@
               type="button"
               onclick="selectDrugById('${escapeQuotes(rel.id)}', true)"
               class="px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1 ${
-                isCurr
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-white text-slate-700 border-indigo-200 hover:bg-indigo-50'
+                isCurr ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-indigo-200 hover:bg-indigo-50'
               }"
             >
               <span class="font-mono">${escapeHtml(rel.code)}</span>
@@ -1023,12 +975,8 @@
 
         siblingSwitchBar = `
           <div class="mb-3 bg-indigo-50/90 border border-indigo-200 rounded-xl p-2.5">
-            <div class="text-[11px] font-bold text-indigo-900 mb-1.5">
-              🔗 偵測到同藥代／同品名關聯品項（點擊可快速切換獨立盤點）：
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-              ${buttonsHtml}
-            </div>
+            <div class="text-[11px] font-bold text-indigo-900 mb-1.5">🔗 同藥代／同品名關聯品項（點擊切換獨立盤點）：</div>
+            <div class="flex flex-wrap gap-1.5">${buttonsHtml}</div>
           </div>
         `;
       }
@@ -1059,12 +1007,7 @@
                 <span class="text-[11px] text-slate-500">（1樓: ${prevStats.floor1Numeric} / 3樓: ${prevStats.floor3Numeric}）</span>
               </div>
             </div>
-            <div class="mt-2 flex flex-wrap gap-1.5">
-              ${batchSummaryBadges}
-            </div>
-            <p class="mt-1.5 text-[11px] text-slate-600">
-              💡 若發現 ${escapeHtml(rec.lastUpdatedDate)} 盤點內容有誤或庫存變動，請直接於下方修改樓層、數量或效期並點擊「儲存」。
-            </p>
+            <div class="mt-2 flex flex-wrap gap-1.5">${batchSummaryBadges}</div>
           </div>
         `;
       }
@@ -1074,51 +1017,29 @@
         const isQtyText = batch.qty.trim() !== "" && !isStrictNumericQty(batch.qty);
 
         return `
-          <div class="bg-slate-50 border-2 border-slate-200 rounded-xl p-3 relative transition hover:border-slate-300">
-            <!-- 批次標題與樓層切換 -->
+          <div class="bg-slate-50 border-2 border-slate-200 rounded-xl p-3 relative transition">
             <div class="flex items-center justify-between gap-2 mb-2.5">
               <div class="flex items-center gap-2">
                 <span class="bg-slate-800 text-white text-xs font-black px-2 py-0.5 rounded-md">批次 #${index + 1}</span>
-                <!-- 存放樓層：1樓 / 3樓 切換器 -->
                 <div class="inline-flex rounded-lg bg-slate-200 p-0.5 border border-slate-300">
-                  <button
-                    type="button"
-                    onclick="updateBatchFloor(${index}, '1樓')"
-                    class="px-3 py-1 rounded-md text-xs font-black transition ${isFloor1 ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}"
-                  >1樓</button>
-                  <button
-                    type="button"
-                    onclick="updateBatchFloor(${index}, '3樓')"
-                    class="px-3 py-1 rounded-md text-xs font-black transition ${!isFloor1 ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}"
-                  >3樓</button>
+                  <button type="button" onclick="updateBatchFloor(${index}, '1樓')" class="px-3 py-1 rounded-md text-xs font-black transition ${isFloor1 ? 'bg-emerald-600 text-white shadow' : 'text-slate-600'}">1樓</button>
+                  <button type="button" onclick="updateBatchFloor(${index}, '3樓')" class="px-3 py-1 rounded-md text-xs font-black transition ${!isFloor1 ? 'bg-sky-600 text-white shadow' : 'text-slate-600'}">3樓</button>
                 </div>
               </div>
-
-              ${editingBatches.length > 1 ? `
-                <button
-                  type="button"
-                  onclick="removeBatchRow(${index})"
-                  class="text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-xs font-bold transition"
-                >✕ 刪除此批</button>
-              ` : ''}
+              ${editingBatches.length > 1 ? `<button type="button" onclick="removeBatchRow(${index})" class="text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-xs font-bold">✕ 刪除此批</button>` : ''}
             </div>
 
-            <!-- 數量與 4 碼效期雙欄輸入 -->
             <div class="grid grid-cols-12 gap-2.5 items-start">
-              <!-- 數量欄位 (可填數字或「開」) -->
               <div class="col-span-7">
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-xs font-bold text-slate-700">數量 <span class="text-[11px] font-normal text-slate-500">(數字或「開」)</span></label>
-                  <button
-                    type="button"
-                    onclick="fillOpenText(${index})"
-                    class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 border border-amber-300 px-2 py-0.5 rounded text-[11px] font-black transition"
-                  >⚡ 填入「開」</button>
+                  <button type="button" onclick="fillOpenText(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-2 py-0.5 rounded text-[11px] font-black">⚡ 填入「開」</button>
                 </div>
                 <input
                   type="text"
                   id="qtyInput-${index}"
                   value="${escapeHtml(batch.qty)}"
+                  onfocus="safelyReleaseMic()"
                   oninput="onBatchQtyInput(${index}, this.value)"
                   placeholder="輸入數量或「開」"
                   class="w-full px-3 py-2.5 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black"
@@ -1128,7 +1049,6 @@
                 </div>
               </div>
 
-              <!-- 效期欄位 (固定 4 碼 YYMM) -->
               <div class="col-span-5">
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-xs font-bold text-slate-700">效期 <span class="text-[11px] font-normal text-slate-500">(4碼)</span></label>
@@ -1140,13 +1060,12 @@
                   maxlength="4"
                   id="expiryInput-${index}"
                   value="${escapeHtml(batch.expiry)}"
+                  onfocus="safelyReleaseMic()"
                   oninput="onBatchExpiryInput(${index}, this.value)"
                   placeholder="如 2612"
                   class="w-full px-3 py-2.5 bg-white border-2 border-slate-300 focus:border-indigo-600 rounded-xl text-base font-mono font-black text-indigo-900 tracking-wider text-center"
                 />
-                <div class="mt-1 text-[11px] text-slate-400 text-center">
-                  原樣保留如 2612、2705
-                </div>
+                <div class="mt-1 text-[11px] text-slate-400 text-center">原樣保留如 2612</div>
               </div>
             </div>
           </div>
@@ -1156,9 +1075,7 @@
       const historyList = (rec && Array.isArray(rec.history)) ? rec.history : [];
       const historyHtml = historyList.length > 0 ? `
         <details class="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs">
-          <summary class="font-bold text-slate-700 cursor-pointer select-none">
-            🕒 查看歷次盤點與修改紀錄（共 ${historyList.length} 次紀錄）
-          </summary>
+          <summary class="font-bold text-slate-700 cursor-pointer select-none">🕒 查看歷次盤點與修改紀錄（共 ${historyList.length} 次紀錄）</summary>
           <div class="mt-2 space-y-1.5 divide-y divide-slate-200">
             ${historyList.slice().reverse().map(h => {
               const st = calculateBatchStats(h.batches);
@@ -1170,9 +1087,7 @@
                     <span class="text-[11px] text-slate-400 ml-1">(${escapeHtml(h.savedAt || '')})</span>
                     <div class="text-slate-700 mt-0.5">${escapeHtml(detailStr)}</div>
                   </div>
-                  <div class="text-right font-bold text-emerald-700 whitespace-nowrap">
-                    數字總量：${st.totalNumeric}
-                  </div>
+                  <div class="text-right font-bold text-emerald-700 whitespace-nowrap">數字總量：${st.totalNumeric}</div>
                 </div>
               `;
             }).join("")}
@@ -1182,23 +1097,16 @@
 
       container.innerHTML = `
         <div class="bg-white rounded-2xl shadow-md border-2 border-slate-200 p-3.5">
-          <!-- 藥品標題與即時分層數字總量 -->
           <div class="flex flex-wrap items-start justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="bg-slate-900 text-amber-300 font-mono font-black text-base px-2.5 py-0.5 rounded-lg">${escapeHtml(drug.code)}</span>
-                <h2 class="text-xl font-black text-slate-900">${escapeHtml(drug.name)}</h2>
-              </div>
+            <div class="flex items-center gap-2">
+              <span class="bg-slate-900 text-amber-300 font-mono font-black text-base px-2.5 py-0.5 rounded-lg">${escapeHtml(drug.code)}</span>
+              <h2 class="text-xl font-black text-slate-900">${escapeHtml(drug.name)}</h2>
             </div>
-
-            <!-- 即時計算之數字總量 (排除「開」) -->
             <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
               <div class="text-[11px] font-bold text-emerald-800">單品數字總量 (排除「開」)</div>
               <div class="flex items-baseline justify-end gap-2">
                 <span id="liveTotalNumericDisplay" class="text-2xl font-black text-emerald-700">${liveStats.totalNumeric}</span>
-                <span id="liveFloorBreakdownDisplay" class="text-xs font-bold text-slate-600">
-                  (1樓: ${liveStats.floor1Numeric} / 3樓: ${liveStats.floor3Numeric})
-                </span>
+                <span id="liveFloorBreakdownDisplay" class="text-xs font-bold text-slate-600">(1樓: ${liveStats.floor1Numeric} / 3樓: ${liveStats.floor3Numeric})</span>
               </div>
               <div id="liveTextNoteDisplay" class="text-[11px] text-amber-700 font-bold ${liveStats.textNotes.length ? '' : 'hidden'}">
                 另含文字批次：${escapeHtml(liveStats.textNotes.join("、"))}
@@ -1206,47 +1114,31 @@
             </div>
           </div>
 
-          <!-- 同藥代或同品名關聯切換列 -->
           ${siblingSwitchBar}
-
-          <!-- 上次盤點跨日提示橫幅 -->
           ${previousReviewBanner}
+          <div class="space-y-2.5" id="batchRowsContainer">${batchRowsHtml}</div>
 
-          <!-- 批次輸入列表 -->
-          <div class="space-y-2.5" id="batchRowsContainer">
-            ${batchRowsHtml}
-          </div>
-
-          <!-- 新增批次與儲存按鈕 -->
-          <div class="mt-3 flex flex-col sm:flex-row gap-2">
-            <button
-              type="button"
-              onclick="addBatchRow()"
-              class="flex-1 py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-700 font-bold text-xs flex items-center justify-center gap-1 transition bg-slate-50 hover:bg-slate-100"
-            >
-              <span>＋ 新增另一組效期 / 樓層批次（預設帶入 <strong class="text-slate-900">${escapeHtml(appState.defaultFloor)}</strong>）</span>
+          <div class="mt-3">
+            <button type="button" onclick="addBatchRow()" class="w-full py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-700 font-bold text-xs bg-slate-50">
+              ＋ 新增另一組效期 / 樓層批次（預設帶入 <strong class="text-slate-900">${escapeHtml(appState.defaultFloor)}</strong>）
             </button>
           </div>
 
-          <div class="mt-3 pt-3 border-t border-slate-200 flex items-center gap-2">
-            <button
-              type="button"
-              onclick="saveCurrentDrugInventory()"
-              class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-base flex items-center justify-center gap-2 transition"
-            >
-              <span>💾 儲存「${escapeHtml(drug.name)} (${escapeHtml(drug.code)})」盤點資料</span>
+          <div class="mt-3 pt-3 border-t border-slate-200">
+            <button type="button" onclick="saveCurrentDrugInventory()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-base transition">
+              💾 儲存「${escapeHtml(drug.name)} (${escapeHtml(drug.code)})」盤點資料
             </button>
           </div>
-
           ${historyHtml}
         </div>
       `;
     }
 
     // =========================================================================
-    // 8. 批次欄位即時互動操作
+    // 7. 批次欄位互動與儲存
     // =========================================================================
     function updateBatchFloor(index, floor) {
+      safelyReleaseMic();
       if (!editingBatches[index]) return;
       editingBatches[index].floor = floor;
       renderActiveDrugCard(currentSelectedId);
@@ -1255,25 +1147,19 @@
     function onBatchQtyInput(index, val) {
       if (!editingBatches[index]) return;
       editingBatches[index].qty = val;
-
       const isQtyText = val.trim() !== "" && !isStrictNumericQty(val);
       const inputEl = document.getElementById(`qtyInput-${index}`);
       const hintEl = document.getElementById(`qtyHint-${index}`);
       if (inputEl && hintEl) {
-        if (isQtyText) {
-          inputEl.className = "w-full px-3 py-2.5 bg-white border-2 border-amber-500 text-amber-900 bg-amber-50/40 focus:border-emerald-600 rounded-xl text-base font-black";
-          hintEl.className = "mt-1 text-[11px] text-amber-700 font-bold";
-          hintEl.textContent = `⚠️ 文字「${val.trim()}」不納入數字總量加總`;
-        } else {
-          inputEl.className = "w-full px-3 py-2.5 bg-white border-2 border-slate-300 text-slate-900 focus:border-emerald-600 rounded-xl text-base font-black";
-          hintEl.className = "mt-1 text-[11px] text-slate-400";
-          hintEl.textContent = "純數字將自動納入總量";
-        }
+        inputEl.className = `w-full px-3 py-2.5 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black`;
+        hintEl.className = `mt-1 text-[11px] ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}`;
+        hintEl.textContent = isQtyText ? `⚠️ 文字「${val.trim()}」不納入數字總量加總` : "純數字將自動納入總量";
       }
       refreshLiveTotalsBanner();
     }
 
     function fillOpenText(index) {
+      safelyReleaseMic();
       if (!editingBatches[index]) return;
       editingBatches[index].qty = "開";
       renderActiveDrugCard(currentSelectedId);
@@ -1307,29 +1193,24 @@
     }
 
     function addBatchRow() {
-      editingBatches.push({
-        floor: appState.defaultFloor,
-        qty: "",
-        expiry: ""
-      });
+      safelyReleaseMic();
+      editingBatches.push({ floor: appState.defaultFloor, qty: "", expiry: "" });
       renderActiveDrugCard(currentSelectedId);
       setTimeout(() => {
-        const newIdx = editingBatches.length - 1;
-        const qtyEl = document.getElementById(`qtyInput-${newIdx}`);
+        const qtyEl = document.getElementById(`qtyInput-${editingBatches.length - 1}`);
         if (qtyEl) qtyEl.focus();
       }, 40);
     }
 
     function removeBatchRow(index) {
+      safelyReleaseMic();
       if (editingBatches.length <= 1) return;
       editingBatches.splice(index, 1);
       renderActiveDrugCard(currentSelectedId);
     }
 
-    // =========================================================================
-    // 9. 儲存盤點資料與跨日歷史留痕
-    // =========================================================================
     function saveCurrentDrugInventory() {
+      safelyReleaseMic();
       const drug = appState.drugs.find(d => d.id === currentSelectedId);
       if (!drug) return;
 
@@ -1347,15 +1228,12 @@
       }
 
       const non4Digit = validBatches.find(b => b.expiry !== "" && !/^\d{4}$/.test(b.expiry));
-      if (non4Digit) {
-        if (!confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2705），確定要原樣儲存嗎？`)) {
-          return;
-        }
+      if (non4Digit && !confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2705），確定要原樣儲存嗎？`)) {
+        return;
       }
 
       const now = new Date();
       const timeStr = `${appState.workingDate} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
       const prevRecord = appState.records[drug.id] || { history: [] };
       const updatedHistory = Array.isArray(prevRecord.history) ? [...prevRecord.history] : [];
 
@@ -1380,33 +1258,27 @@
       const stats = calculateBatchStats(validBatches);
       showToast(`✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}`);
 
-      const searchInput = document.getElementById("searchInput");
-      searchInput.value = "";
+      document.getElementById("searchInput").value = "";
+      latestTranscript = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
     }
 
     // =========================================================================
-    // 10. 盤點總覽列表渲染
+    // 8. 盤點總覽、Excel 匯出與備份管理
     // =========================================================================
     function setListFilter(filter) {
       currentListFilter = filter;
       ["ALL", "DONE", "PENDING"].forEach(k => {
-        const btn = document.getElementById(`filterBtn-${k}`);
-        if (k === filter) {
-          btn.className = "px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm";
-        } else {
-          btn.className = "px-2.5 py-1 rounded-lg text-slate-600";
-        }
+        document.getElementById(`filterBtn-${k}`).className = k === filter
+          ? "px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm"
+          : "px-2.5 py-1 rounded-lg text-slate-600";
       });
       renderOverviewList();
     }
 
     function renderOverviewList() {
-      const totalDrugs = appState.drugs.length;
-      let countedDrugs = 0;
-      let totalBatches = 0;
-
+      let countedDrugs = 0, totalBatches = 0;
       appState.drugs.forEach(d => {
         const r = appState.records[d.id];
         if (r && r.batches && r.batches.length > 0) {
@@ -1415,12 +1287,11 @@
         }
       });
 
-      document.getElementById("statTotalDrugs").textContent = totalDrugs;
+      document.getElementById("statTotalDrugs").textContent = appState.drugs.length;
       document.getElementById("statCountedDrugs").textContent = countedDrugs;
       document.getElementById("statTotalBatches").textContent = totalBatches;
 
       const kw = (document.getElementById("overviewSearchInput")?.value || "").trim().toUpperCase();
-
       const filtered = appState.drugs.filter(d => {
         const hasRec = appState.records[d.id]?.batches?.length > 0;
         if (currentListFilter === "DONE" && !hasRec) return false;
@@ -1439,39 +1310,28 @@
         const rec = appState.records[d.id];
         const hasRec = rec && rec.batches && rec.batches.length > 0;
         const stats = hasRec ? calculateBatchStats(rec.batches) : null;
-
         const batchesBadges = hasRec ? rec.batches.map(b => {
           const flBadge = b.floor === "3樓" ? "bg-sky-100 text-sky-800 border-sky-300" : "bg-emerald-100 text-emerald-800 border-emerald-300";
-          return `
-            <span class="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
-              <span class="px-1.5 py-0.2 rounded border text-[10px] font-black ${flBadge}">${escapeHtml(b.floor || '1樓')}</span>
-              <span>數量: <strong>${escapeHtml(b.qty)}</strong></span>
-              <span class="text-slate-300">|</span>
-              <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(b.expiry)}</strong></span>
-            </span>
-          `;
+          return `<span class="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
+            <span class="px-1.5 py-0.2 rounded border text-[10px] font-black ${flBadge}">${escapeHtml(b.floor || '1樓')}</span>
+            <span>數量: <strong>${escapeHtml(b.qty)}</strong></span>
+            <span class="text-slate-300">|</span>
+            <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(b.expiry)}</strong></span>
+          </span>`;
         }).join("") : `<span class="text-xs text-slate-400">尚未建立盤點紀錄</span>`;
 
         return `
-          <div
-            onclick="jumpToDrugFromList('${escapeQuotes(d.id)}')"
-            class="p-3 rounded-xl border ${hasRec ? 'border-emerald-200 bg-white' : 'border-slate-200 bg-slate-50/60'} hover:border-emerald-500 cursor-pointer transition shadow-sm"
-          >
+          <div onclick="jumpToDrugFromList('${escapeQuotes(d.id)}')" class="p-3 rounded-xl border ${hasRec ? 'border-emerald-200 bg-white' : 'border-slate-200 bg-slate-50/60'} hover:border-emerald-500 cursor-pointer transition shadow-sm">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
                 <span class="font-mono font-black text-xs bg-slate-900 text-amber-300 px-2 py-0.5 rounded">${escapeHtml(d.code)}</span>
                 <span class="font-black text-sm text-slate-900">${escapeHtml(d.name)}</span>
               </div>
               <div class="text-right">
-                ${hasRec ? `
-                  <span class="text-xs font-black text-emerald-700">數字總量：${stats.totalNumeric}</span>
-                  <span class="block text-[10px] text-slate-500">1樓:${stats.floor1Numeric} / 3樓:${stats.floor3Numeric}｜盤點日:${rec.lastUpdatedDate}</span>
-                ` : `<span class="text-xs font-bold text-slate-400">未盤點</span>`}
+                ${hasRec ? `<span class="text-xs font-black text-emerald-700">數字總量：${stats.totalNumeric}</span><span class="block text-[10px] text-slate-500">1樓:${stats.floor1Numeric} / 3樓:${stats.floor3Numeric}｜${rec.lastUpdatedDate}</span>` : `<span class="text-xs font-bold text-slate-400">未盤點</span>`}
               </div>
             </div>
-            <div class="mt-2 flex flex-wrap gap-1.5">
-              ${batchesBadges}
-            </div>
+            <div class="mt-2 flex flex-wrap gap-1.5">${batchesBadges}</div>
           </div>
         `;
       }).join("");
@@ -1483,129 +1343,83 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // =========================================================================
-    // 11. Excel 匯出 (.xlsx) 與藥品清單匯入
-    // =========================================================================
     function exportToExcel() {
       if (typeof XLSX === "undefined") {
         alert("Excel 匯出元件載入中，請確認網路連線或稍後再試。");
         return;
       }
-
-      const detailRows = [];
-      const summaryRows = [];
-      const historyRows = [];
+      const detailRows = [], summaryRows = [], historyRows = [];
 
       appState.drugs.forEach(d => {
         const rec = appState.records[d.id];
         if (rec && Array.isArray(rec.batches) && rec.batches.length > 0) {
           const stats = calculateBatchStats(rec.batches);
-
           rec.batches.forEach((b, idx) => {
             detailRows.push({
-              "藥品代碼": d.code,
-              "藥品名稱": d.name,
-              "批次序號": idx + 1,
-              "存放樓層": b.floor || "1樓",
-              "該批數量": b.qty,
-              "效期(4碼)": b.expiry,
-              "單品數字總量(排除文字)": stats.totalNumeric,
-              "最後盤點日期": rec.lastUpdatedDate
+              "藥品代碼": d.code, "藥品名稱": d.name, "批次序號": idx + 1,
+              "存放樓層": b.floor || "1樓", "該批數量": b.qty, "效期(4碼)": b.expiry,
+              "單品數字總量(排除文字)": stats.totalNumeric, "最後盤點日期": rec.lastUpdatedDate
             });
           });
 
-          const batchSummaryStr = rec.batches
-            .map(b => `[${b.floor || '1樓'}] 數量:${b.qty} (效期:${b.expiry})`)
-            .join("； ");
-
           summaryRows.push({
-            "藥品代碼": d.code,
-            "藥品名稱": d.name,
-            "1樓數字總量": stats.floor1Numeric,
-            "3樓數字總量": stats.floor3Numeric,
+            "藥品代碼": d.code, "藥品名稱": d.name,
+            "1樓數字總量": stats.floor1Numeric, "3樓數字總量": stats.floor3Numeric,
             "單品數字總量(1樓+3樓)": stats.totalNumeric,
             "開瓶/文字批次紀錄": stats.textNotes.join("、") || "無",
-            "各樓層數量與4碼效期明細": batchSummaryStr,
+            "各樓層數量與4碼效期明細": rec.batches.map(b => `[${b.floor || '1樓'}] 數量:${b.qty} (效期:${b.expiry})`).join("； "),
             "最後盤點日期": rec.lastUpdatedDate
           });
 
-          if (Array.isArray(rec.history)) {
-            rec.history.forEach(h => {
-              const hStats = calculateBatchStats(h.batches);
-              (h.batches || []).forEach((hb, hIdx) => {
-                historyRows.push({
-                  "盤點作業日期": h.date,
-                  "儲存時間": h.savedAt || "",
-                  "藥品代碼": d.code,
-                  "藥品名稱": d.name,
-                  "批次序號": hIdx + 1,
-                  "存放樓層": hb.floor || "1樓",
-                  "該批數量": hb.qty,
-                  "效期(4碼)": hb.expiry,
-                  "當時單品數字總量": hStats.totalNumeric
-                });
+          (rec.history || []).forEach(h => {
+            const hStats = calculateBatchStats(h.batches);
+            (h.batches || []).forEach((hb, hIdx) => {
+              historyRows.push({
+                "盤點作業日期": h.date, "儲存時間": h.savedAt || "",
+                "藥品代碼": d.code, "藥品名稱": d.name, "批次序號": hIdx + 1,
+                "存放樓層": hb.floor || "1樓", "該批數量": hb.qty, "效期(4碼)": hb.expiry,
+                "當時單品數字總量": hStats.totalNumeric
               });
             });
-          }
+          });
         } else {
           summaryRows.push({
-            "藥品代碼": d.code,
-            "藥品名稱": d.name,
-            "1樓數字總量": "",
-            "3樓數字總量": "",
-            "單品數字總量(1樓+3樓)": "",
-            "開瓶/文字批次紀錄": "",
-            "各樓層數量與4碼效期明細": "尚未盤點",
-            "最後盤點日期": ""
+            "藥品代碼": d.code, "藥品名稱": d.name, "1樓數字總量": "", "3樓數字總量": "",
+            "單品數字總量(1樓+3樓)": "", "開瓶/文字批次紀錄": "",
+            "各樓層數量與4碼效期明細": "尚未盤點", "最後盤點日期": ""
           });
         }
       });
 
       const wb = XLSX.utils.book_new();
-
-      const ws1 = XLSX.utils.json_to_sheet(detailRows.length > 0 ? detailRows : [{ "說明": "目前尚無已盤點之明細資料" }]);
-      const ws2 = XLSX.utils.json_to_sheet(summaryRows);
-      const ws3 = XLSX.utils.json_to_sheet(historyRows.length > 0 ? historyRows : [{ "說明": "目前尚無歷次修改紀錄" }]);
-
-      XLSX.utils.book_append_sheet(wb, ws1, "1_效期批號明細表");
-      XLSX.utils.book_append_sheet(wb, ws2, "2_單品總量彙總表");
-      XLSX.utils.book_append_sheet(wb, ws3, "3_歷次複盤修改紀錄");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows.length ? detailRows : [{ "說明": "尚無已盤點明細" }]), "1_效期批號明細表");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "2_單品總量彙總表");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(historyRows.length ? historyRows : [{ "說明": "尚無歷次修改紀錄" }]), "3_歷次複盤修改紀錄");
 
       const fileName = `白耳鼻喉科_藥品盤點報表_${appState.workingDate}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      showToast(`📥 已匯出 Excel 檔案：${fileName}`);
+      showToast(`📥 已匯出 Excel：${fileName}`);
     }
 
     function importDrugMasterExcel(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: "array", raw: false });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-
-          const importedRaw = [];
-          const seenIds = new Set();
-
+          const workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array", raw: false });
+          const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+          const importedRaw = [], seenIds = new Set();
           rows.forEach(row => {
-            const code = String(row["藥品代碼"] || row["藥代"] || row["代碼"] || row["code"] || row["CODE"] || "").trim();
-            const name = String(row["藥品名稱"] || row["品名"] || row["中文商品名"] || row["名稱"] || row["name"] || "").trim();
+            const code = String(row["藥品代碼"] || row["藥代"] || row["代碼"] || row["code"] || "").trim();
+            const name = String(row["藥品名稱"] || row["品名"] || row["名稱"] || row["name"] || "").trim();
             const id = `${code}__${name}`;
             if (code && name && !seenIds.has(id)) {
               seenIds.add(id);
               importedRaw.push({ id, code, name });
             }
           });
-
-          if (importedRaw.length === 0) {
-            alert("匯入失敗：請確認 Excel 第一列標題包含「藥品代碼」與「藥品名稱」欄位！");
-            return;
-          }
-
+          if (!importedRaw.length) { alert("請確認 Excel 含「藥品代碼」與「藥品名稱」欄位！"); return; }
           appState.drugs = importedRaw;
           currentSelectedId = importedRaw[0].id;
           saveState();
@@ -1615,8 +1429,7 @@
           showToast(`✅ 成功匯入 ${importedRaw.length} 筆藥品主檔！`);
           switchTab("scan");
         } catch (err) {
-          console.error(err);
-          alert("讀取 Excel 檔案發生錯誤，請確認檔案格式為 .xlsx 或 .csv。");
+          alert("讀取 Excel 發生錯誤。");
         } finally {
           event.target.value = "";
         }
@@ -1625,7 +1438,7 @@
     }
 
     function restoreBuiltin141Drugs() {
-      if (!confirm("確定要還原為系統內建的 141 筆白耳鼻喉科藥品清單嗎？（已輸入的盤點紀錄將保留）")) return;
+      if (!confirm("確定要還原為內建的 141 筆藥品清單嗎？（既有盤點紀錄將保留）")) return;
       appState.drugs = [...BUILTIN_DRUGS];
       currentSelectedId = BUILTIN_DRUGS[0].id;
       saveState();
@@ -1635,9 +1448,6 @@
       showToast("✅ 已還原內建 141 筆藥品清單！");
     }
 
-    // =========================================================================
-    // 12. 備份、還原與分頁切換輔助函式
-    // =========================================================================
     function exportBackupJSON() {
       const blob = new Blob([JSON.stringify(appState, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -1660,7 +1470,7 @@
             appState.drugs = normalizeDrugList(parsed.drugs);
             saveState();
             initApp();
-            showToast("✅ 已成功還原系統 JSON 備份資料！");
+            showToast("✅ 已成功還原 JSON 備份資料！");
           }
         } catch (err) {
           alert("JSON 備份檔格式錯誤！");
@@ -1670,7 +1480,7 @@
     }
 
     function clearAllInventoryData() {
-      if (!confirm("確定要清空所有已輸入的盤點紀錄嗎？（141 筆藥品主檔清單將保留）")) return;
+      if (!confirm("確定要清空所有已輸入的盤點紀錄嗎？（141 筆藥品主檔將保留）")) return;
       appState.records = {};
       saveState();
       selectDrugById(currentSelectedId, true);
@@ -1680,16 +1490,12 @@
     }
 
     function switchTab(tabName) {
+      safelyReleaseMic();
       ["scan", "list", "manage"].forEach(t => {
-        const sec = document.getElementById(`tab-${t}`);
-        const nav = document.getElementById(`navBtn-${t}`);
-        if (t === tabName) {
-          sec.classList.remove("hidden");
-          nav.className = "py-2.5 flex flex-col items-center justify-center text-emerald-600 font-bold text-xs";
-        } else {
-          sec.classList.add("hidden");
-          nav.className = "py-2.5 flex flex-col items-center justify-center text-slate-400 font-bold text-xs";
-        }
+        document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tabName);
+        document.getElementById(`navBtn-${t}`).className = t === tabName
+          ? "py-2.5 flex flex-col items-center justify-center text-emerald-600 font-bold text-xs"
+          : "py-2.5 flex flex-col items-center justify-center text-slate-400 font-bold text-xs";
       });
       if (tabName === "list") renderOverviewList();
     }
@@ -1700,25 +1506,15 @@
       box.textContent = msg;
       box.classList.remove("hidden");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        box.classList.add("hidden");
-      }, 2600);
+      toastTimer = setTimeout(() => box.classList.add("hidden"), 2600);
     }
 
     function escapeHtml(str) {
-      return String(str ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     function escapeQuotes(str) {
-      return String(str ?? "")
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"');
+      return String(str ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"');
     }
 
     window.addEventListener("DOMContentLoaded", initApp);
