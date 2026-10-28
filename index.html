@@ -44,6 +44,10 @@
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
         </div>
         <div class="flex items-center gap-1.5">
+          <!-- 強制更新版本按鈕 (保留資料) -->
+          <button onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition" title="強制穿透快取更新版本（資料保留）">
+            <span>🔄 更新版本</span>
+          </button>
           <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
             <span>📥 匯出 Excel</span>
           </button>
@@ -132,7 +136,7 @@
         <div id="voiceStatusBar" class="mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-2">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600">語音待命：點擊「🎤 開始接收語音」，看到綠燈後說出藥名，講完按「⏹️ 停止」</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600">語音待命：點擊「🎤 開始接收語音」，連續盤點不卡死</span>
           </div>
         </div>
 
@@ -279,7 +283,7 @@
 
   <script>
     // =========================================================================
-    // 1. 白耳鼻喉科 141 筆完整內建藥品清單（嚴格依據使用者提供之清單，無任何額外增刪）
+    // 1. 白耳鼻喉科 141 筆完整內建藥品清單
     // =========================================================================
     const RAW_BUILTIN_DRUGS = [
       { code: "TAMI", name: "易剋冒(公費)" },
@@ -457,6 +461,14 @@
     let editingBatches = [];
     let currentListFilter = "ALL";
 
+    // 強制穿透快取重新載入最新版程式碼（保留 localStorage 既有盤點資料）
+    function forceHardReload() {
+      if (confirm("確定要強制更新系統版本嗎？（您手機已輸入的盤點資料會完整保留）")) {
+        const timestamp = new Date().getTime();
+        window.location.href = window.location.pathname + "?v=" + timestamp;
+      }
+    }
+
     // =========================================================================
     // 2. 初始化與資料持久化 (localStorage)
     // =========================================================================
@@ -570,22 +582,19 @@
     }
 
     // =========================================================================
-    // 5. 「開始語音 ＋ 停止辨識」雙按鈕控制與國字數字智慧轉譯引擎
+    // 5. 強化版連續語音控制：強制銷毀重建實例，確保連續盤點 141 項絕不卡死
     // =========================================================================
     let recognitionInstance = null;
     let isVoiceListening = false;
     let manualStopRequested = false;
 
-    // 智慧轉譯語音文字：去除標點與空白、將藥品常見國字數字轉為阿拉伯數字（同時保護「必百欣」、「二羥丙基茶鹼」等專有名詞）
     function normalizeVoiceTranscript(rawText) {
       if (!rawText) return "";
       let s = String(rawText).replace(/[。，、？ ！?.,\s]/g, "").trim();
 
-      // 保護含有數字國字之藥品專有名詞不被誤轉
       s = s.replace(/必百欣/g, "__BIBAIXIN__");
       s = s.replace(/二羥/g, "__ERQIANG__");
 
-      // 常見藥品劑量與規格國字轉阿拉伯數字
       const phraseMap = [
         [/一千/g, "1000"],
         [/一零零零/g, "1000"],
@@ -610,14 +619,12 @@
         s = s.replace(regex, numStr);
       });
 
-      // 將剩餘單字國字數字轉為阿拉伯數字（例如 AM五 -> AM5、SIN四 -> SIN4）
       const singleDigitMap = {
         "零": "0", "一": "1", "二": "2", "兩": "2", "三": "3",
         "四": "4", "五": "5", "六": "6", "七": "7", "八": "8", "九": "9"
       };
       s = s.replace(/[零一二兩三四五六七八九]/g, ch => singleDigitMap[ch] ?? ch);
 
-      // 還原保護詞
       s = s.replace(/__BIBAIXIN__/g, "必百欣");
       s = s.replace(/__ERQIANG__/g, "二羥");
 
@@ -640,7 +647,7 @@
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-50 text-xs flex items-center justify-between gap-2 transition-all";
         statusDot.className = "w-3 h-3 rounded-full bg-amber-500 inline-block shrink-0 animate-ping";
         statusText.className = "font-black text-amber-900";
-        statusText.textContent = message || "🟡 正在啟動麥克風，請稍候...";
+        statusText.textContent = message || "🟡 正在初始化麥克風硬體...";
       } else if (state === "LISTENING") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 text-white recording-pulse transition";
         startBtnText.textContent = "正在收音中...";
@@ -649,7 +656,7 @@
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-xs flex items-center justify-between gap-2 transition-all";
         statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 inline-block shrink-0 animate-pulse";
         statusText.className = "font-black text-emerald-900";
-        statusText.textContent = message || "🟢 正在收音中！請說出藥名或藥代，講完請按「⏹️ 停止接收並辨識」";
+        statusText.textContent = message || "🟢 綠燈收音中！請說出下一筆藥名，講完請點「⏹️ 停止接收並辨識」";
       } else if (state === "DONE") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
         startBtnText.textContent = "開始接收語音";
@@ -658,9 +665,8 @@
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs flex items-center justify-between gap-2 transition-all";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block shrink-0";
         statusText.className = "font-bold text-indigo-900";
-        statusText.textContent = message || "✅ 語音辨識完成！";
+        statusText.textContent = message || "✅ 辨識完成！可直接隨時點擊「🎤 開始接收語音」盤點下一筆";
       } else {
-        // IDLE or ERROR
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
         startBtnText.textContent = "開始接收語音";
         stopBtn.disabled = true;
@@ -668,19 +674,18 @@
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
         statusText.className = "font-bold text-slate-600";
-        statusText.textContent = message || "語音待命：點擊「🎤 開始接收語音」，看到綠燈後說出藥名，講完按「⏹️ 停止」";
+        statusText.textContent = message || "語音待命：點擊「🎤 開始接收語音」，連續盤點不卡死";
       }
     }
 
     function startVoiceRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        showToast("⚠️ 您的瀏覽器不支援語音輸入，請直接使用鍵盤輸入");
-        updateVoiceControlUI("IDLE", "⚠️ 此瀏覽器不支援語音辨識，請改用鍵盤或語音輸入法");
+        showToast("⚠️ 您的瀏覽器不支援語音輸入");
         return;
       }
 
-      // 若已有舊的語音實例，先強制中止並清除
+      // 1. 強制完全銷毀舊實例與釋放硬體串流
       if (recognitionInstance) {
         try {
           manualStopRequested = true;
@@ -689,75 +694,73 @@
         recognitionInstance = null;
       }
 
-      // 清空搜尋框準備接收新語音
       const searchInput = document.getElementById("searchInput");
       searchInput.value = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
 
       manualStopRequested = false;
-      isVoiceListening = true;
-      updateVoiceControlUI("STARTING", "🟡 正在啟動麥克風，請稍候 0.5 秒...");
+      updateVoiceControlUI("STARTING", "🟡 正在重置麥克風通道...");
 
-      const recognition = new SpeechRecognition();
-      recognitionInstance = recognition;
-      recognition.lang = "zh-TW";
-      // 開啟連續收音與即時出字，讓藥師邊講邊看到文字跳出來
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
+      // 2. 加入短暫延遲確保硬體完全釋放後再建立新實例
+      setTimeout(() => {
+        const recognition = new SpeechRecognition();
+        recognitionInstance = recognition;
+        recognition.lang = "zh-TW";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
 
-      recognition.onstart = () => {
-        isVoiceListening = true;
-        updateVoiceControlUI("LISTENING", "🟢 麥克風已就緒！請現在說出藥名或藥代（講完請按右側「⏹️ 停止」）");
-      };
+        recognition.onstart = () => {
+          isVoiceListening = true;
+          updateVoiceControlUI("LISTENING", "🟢 收音中！請說出藥名（講完請點右側「⏹️ 停止」）");
+        };
 
-      recognition.onresult = (event) => {
-        let combinedRaw = "";
-        for (let i = 0; i < event.results.length; i++) {
-          combinedRaw += event.results[i][0].transcript;
+        recognition.onresult = (event) => {
+          let combinedRaw = "";
+          for (let i = 0; i < event.results.length; i++) {
+            combinedRaw += event.results[i][0].transcript;
+          }
+
+          const normalized = normalizeVoiceTranscript(combinedRaw);
+          if (normalized) {
+            searchInput.value = normalized;
+            handleSearchInput();
+            updateVoiceControlUI(
+              "LISTENING",
+              `🟢 聽取中：「${combinedRaw}」➔ 轉譯：「${normalized}」`
+            );
+          }
+        };
+
+        recognition.onerror = (event) => {
+          if (manualStopRequested) return;
+          console.warn("Speech error:", event.error);
+          isVoiceListening = false;
+          updateVoiceControlUI("IDLE", `⚠️ 收音中斷 (${event.error})，請再次點擊「🎤 開始」`);
+          recognitionInstance = null;
+        };
+
+        recognition.onend = () => {
+          isVoiceListening = false;
+          const currentVal = document.getElementById("searchInput").value.trim();
+          if (currentVal) {
+            finalizeVoiceSelection(currentVal);
+          } else {
+            updateVoiceControlUI("IDLE", "⏹️ 已停止收音。點擊「🎤 開始接收語音」可繼續盤點");
+          }
+          recognitionInstance = null;
+        };
+
+        try {
+          recognition.start();
+        } catch (err) {
+          console.error(err);
+          isVoiceListening = false;
+          updateVoiceControlUI("IDLE", "⚠️ 啟動失敗，請再次點擊「🎤 開始接收語音」");
+          recognitionInstance = null;
         }
-
-        const normalized = normalizeVoiceTranscript(combinedRaw);
-        if (normalized) {
-          searchInput.value = normalized;
-          handleSearchInput();
-          updateVoiceControlUI(
-            "LISTENING",
-            `🟢 收音辨識中：「${combinedRaw}」➔ 轉譯搜尋：「${normalized}」（確認無誤請按「⏹️ 停止」）`
-          );
-        }
-      };
-
-      recognition.onerror = (event) => {
-        if (manualStopRequested) return;
-        console.warn("SpeechRecognition error:", event.error);
-        if (event.error === "no-speech") {
-          updateVoiceControlUI("IDLE", "⚠️ 未偵測到聲音，請再按一次「🎤 開始接收語音」並於綠燈亮起後說話");
-        } else if (event.error === "not-allowed") {
-          updateVoiceControlUI("IDLE", "⚠️ 麥克風權限被拒絕，請於瀏覽器設定中允許麥克風權限");
-        } else {
-          updateVoiceControlUI("IDLE", `⚠️ 語音收音中斷 (${event.error})，請再按一次「🎤 開始接收語音」`);
-        }
-        isVoiceListening = false;
-      };
-
-      recognition.onend = () => {
-        isVoiceListening = false;
-        const currentVal = document.getElementById("searchInput").value.trim();
-        if (currentVal) {
-          finalizeVoiceSelection(currentVal);
-        } else if (manualStopRequested) {
-          updateVoiceControlUI("IDLE", "⏹️ 已停止收音（未收到語音文字，可隨時重新點擊「🎤 開始接收語音」）");
-        }
-      };
-
-      try {
-        recognition.start();
-      } catch (err) {
-        console.error(err);
-        updateVoiceControlUI("IDLE", "⚠️ 無法啟動語音辨識，請重新點擊「🎤 開始接收語音」");
-      }
+      }, 150);
     }
 
     function stopVoiceRecognition(isManualClick = true) {
@@ -765,6 +768,7 @@
       if (recognitionInstance) {
         try {
           recognitionInstance.stop();
+          recognitionInstance.abort();
         } catch (e) {}
       }
       isVoiceListening = false;
@@ -772,26 +776,26 @@
       if (currentVal) {
         finalizeVoiceSelection(currentVal);
       } else {
-        updateVoiceControlUI("IDLE", "⏹️ 已停止收音。點擊「🎤 開始接收語音」可再次搜尋");
+        updateVoiceControlUI("IDLE", "⏹️ 已停止收音。隨時可點擊「🎤 開始接收語音」盤點下一筆");
       }
+      recognitionInstance = null;
     }
 
     function finalizeVoiceSelection(queryText) {
       const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(queryText);
       if (combined.length > 0) {
         const bestMatch = exactCodeMatches[0] || exactNameMatches[0] || combined[0];
-        // 若只有唯一命中，自動關閉下拉選單直接聚焦盤點卡；若有多筆同碼（如 AU6），保留下拉選單與關聯切換列供選擇
         const shouldCloseDropdown = combined.length === 1;
         selectDrugById(bestMatch.id, shouldCloseDropdown);
         updateVoiceControlUI(
           "DONE",
-          `✅ 已鎖定語音結果：「${queryText}」➔ 自動帶出【${bestMatch.code} ${bestMatch.name}】`
+          `✅ 已鎖定：「${queryText}」➔ 【${bestMatch.code} ${bestMatch.name}】（可點「🎤 開始」繼續下一筆）`
         );
         showToast(`🎤 語音已鎖定：${bestMatch.code} ${bestMatch.name}`);
       } else {
         updateVoiceControlUI(
           "DONE",
-          `⚠️ 語音收到「${queryText}」，但 141 筆清單中無相符品項，請重新語音或手打修正`
+          `⚠️ 查無「${queryText}」，141筆清單無此品項`
         );
       }
     }
@@ -848,19 +852,15 @@
 
     function getMatchedDrugs(rawQuery) {
       const qUpper = rawQuery.toUpperCase();
-      // 第一優先：藥品代碼完全相符（例如輸入 17、25、AM5、AU6）
       const exactCodeMatches = appState.drugs.filter(d => d.code.toUpperCase() === qUpper);
-      // 第二優先：藥品名稱完全相符
       const exactNameMatches = appState.drugs.filter(d =>
         !exactCodeMatches.includes(d) && d.name.toUpperCase() === qUpper
       );
-      // 第三優先：藥品代碼前綴相符
       const prefixCodeMatches = appState.drugs.filter(d =>
         !exactCodeMatches.includes(d) &&
         !exactNameMatches.includes(d) &&
         d.code.toUpperCase().startsWith(qUpper)
       );
-      // 第四優先：藥品名稱或代碼子字串包含
       const substringMatches = appState.drugs.filter(d =>
         !exactCodeMatches.includes(d) &&
         !exactNameMatches.includes(d) &&
@@ -954,7 +954,7 @@
     }
 
     // =========================================================================
-    // 7. 選中藥品並渲染專屬盤點卡（含同藥代/同名切換、1樓/3樓、數量與「開」、4碼效期）
+    // 7. 選中藥品並渲染專屬盤點卡
     // =========================================================================
     function selectDrugById(id, closeDropdown = true) {
       const drug = appState.drugs.find(d => d.id === id);
