@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="白耳盤點系統" />
-  <title>白耳鼻喉科｜行動藥品盤點系統 v4.6</title>
+  <title>白耳鼻喉科｜行動藥品盤點系統 v4.7</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -34,7 +34,7 @@
         <div class="flex items-center gap-1.5">
           <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider">ENT</span>
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
-          <span class="bg-amber-400 text-slate-950 font-mono text-[11px] font-black px-1.5 py-0.5 rounded">v4.6</span>
+          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v4.7</span>
         </div>
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
@@ -78,7 +78,6 @@
           <input
             type="text"
             id="searchInput"
-            onfocus="safelyReleaseMic()"
             oninput="handleSearchInput()"
             onkeydown="handleSearchKeydown(event)"
             placeholder="輸入藥代(如 AM5、ASV、SEN)或藥名..."
@@ -121,7 +120,7 @@
         <div id="voiceStatusBar" class="mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-2">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600">語音待命：點「🎤 開始接收語音」亮綠燈後說出藥代或藥名（講完自動鎖定或按 ⏹️ 停止）</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600">[v4.7 語音待命] 點「🎤 開始接收語音」亮綠燈後說話，講完自動鎖定或按「⏹️ 停止」</span>
           </div>
         </div>
 
@@ -334,6 +333,7 @@
     const BUILTIN_DRUGS = normalizeDrugList(RAW_BUILTIN_DRUGS);
     // 嚴格鎖定 STORAGE_KEY，確保手機既有盤點資料 100% 保留
     const STORAGE_KEY = "bai_ent_inventory_v4_official_141";
+    const VOICE_BRIDGE_KEY = "bai_ent_voice_bridge_v47";
 
     function getTodayDateString() {
       const d = new Date();
@@ -352,7 +352,7 @@
     let editingBatches = [];
     let currentListFilter = "ALL";
 
-    // 強化版：強制穿透快取重新載入最新版程式碼（保留 localStorage 既有盤點資料）
+    // 強制穿透快取重新載入最新版程式碼（保留 localStorage 既有盤點資料）
     async function forceHardReload() {
       if (!confirm("確定要強制更新系統版本嗎？（您手機已輸入的盤點資料會 100% 完整保留）")) return;
       showToast("🔄 正在穿透快取拉取最新版本...");
@@ -373,7 +373,7 @@
     }
 
     // =========================================================================
-    // 2. 初始化與資料持久化 (localStorage)
+    // 2. 初始化與資料持久化 (localStorage + 語音無感重置狀態還原)
     // =========================================================================
     function initApp() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -387,6 +387,11 @@
             : [...BUILTIN_DRUGS];
           appState.records = parsed.records || {};
           appState.recentIds = Array.isArray(parsed.recentIds) ? parsed.recentIds : ["AM5__安蒙西林500", "COM__康保西林"];
+          if (parsed.lastSelectedId) {
+            currentSelectedId = parsed.lastSelectedId;
+          } else if (appState.recentIds[0]) {
+            currentSelectedId = appState.recentIds[0];
+          }
         } catch (e) {
           console.error("讀取快取失敗", e);
         }
@@ -398,12 +403,51 @@
       updateDefaultFloorUI();
       renderQuickDrugPills();
 
+      // 檢查是否剛完成「語音無感重置 (Document Reset)」
+      const bridgeRaw = sessionStorage.getItem(VOICE_BRIDGE_KEY);
+      if (bridgeRaw) {
+        sessionStorage.removeItem(VOICE_BRIDGE_KEY);
+        try {
+          const bridge = JSON.parse(bridgeRaw);
+          if (bridge.selectedId) {
+            currentSelectedId = bridge.selectedId;
+          }
+          const targetDrug = appState.drugs.find(d => d.id === currentSelectedId) || appState.drugs[0];
+          if (targetDrug) {
+            selectDrugById(targetDrug.id, true);
+          }
+          // 若重設前有尚未儲存的草稿批次，無縫還原
+          if (Array.isArray(bridge.draftBatches) && bridge.draftBatches.length > 0) {
+            editingBatches = bridge.draftBatches;
+            renderActiveDrugCard(currentSelectedId);
+          }
+          // 若為多筆關聯命中（如 SEN 或 AU6），展開下拉選單供挑選
+          if (bridge.openDropdownQuery) {
+            const { combined } = getMatchedDrugs(bridge.openDropdownQuery);
+            if (combined.length > 1) {
+              renderDropdownItems(combined);
+            }
+          }
+          if (bridge.statusState && bridge.statusMsg) {
+            updateVoiceControlUI(bridge.statusState, bridge.statusMsg);
+          }
+          if (bridge.toastMsg) {
+            showToast(bridge.toastMsg);
+          }
+          renderOverviewList();
+          return;
+        } catch (e) {
+          console.error("語音重置狀態還原失敗", e);
+        }
+      }
+
       const initialDrug = appState.drugs.find(d => d.id === currentSelectedId) || appState.drugs[0];
       if (initialDrug) selectDrugById(initialDrug.id, true);
       renderOverviewList();
     }
 
     function saveState() {
+      appState.lastSelectedId = currentSelectedId;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
       const badge = document.getElementById("drugCountBadge");
       if (badge) badge.textContent = `內建 ${appState.drugs.length} 品項`;
@@ -466,13 +510,15 @@
     }
 
     // =========================================================================
-    // 4. Argon v4.6 根治版語音引擎：同步手勢啟動 ＋ 單句自動釋放 ＋ 零死鎖狀態機
+    // 4. v4.7 終極根治版語音引擎：尾音完整結算 ＋ Document 自動無感重置
     // =========================================================================
     let activeRecognition = null;
     let isVoiceListening = false;
+    let hasUsedVoiceInThisDoc = false;
     let latestTranscript = "";
     let autoSettleTimer = null;
-    let startupWatchdogTimer = null;
+    let manualStopWaitTimer = null;
+    let isWaitingManualStop = false;
 
     function normalizeVoiceTranscript(rawText) {
       if (!rawText) return "";
@@ -520,13 +566,13 @@
         statusText.textContent = message || "🟡 正在啟動麥克風...";
       } else if (state === "LISTENING") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 text-white recording-pulse transition";
-        startBtnText.textContent = "收音中 (點此重講)";
+        startBtnText.textContent = "正在收音中...";
         stopBtn.disabled = false;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-md transition";
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 inline-block shrink-0 animate-pulse";
         statusText.className = "font-black text-emerald-900";
-        statusText.textContent = message || "🟢 綠燈收音中！請說出藥代或藥名（講完自動鎖定或按 ⏹️ 停止）";
+        statusText.textContent = message || "🟢 綠燈收音中！請說出藥代或藥名（講完自動鎖定或按「⏹️ 停止」）";
       } else if (state === "DONE") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
         startBtnText.textContent = "開始接收語音 (下一筆)";
@@ -535,7 +581,7 @@
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block shrink-0";
         statusText.className = "font-bold text-indigo-900";
-        statusText.textContent = message || "✅ 語音已鎖定並釋放麥克風！可隨時點「🎤 開始」講下一筆";
+        statusText.textContent = message || "✅ 語音已鎖定且麥克風已重置！可直接點「🎤 開始」講下一筆";
       } else {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
         startBtnText.textContent = "開始接收語音";
@@ -544,31 +590,7 @@
         statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
         statusText.className = "font-bold text-slate-600";
-        statusText.textContent = message || "語音待命：點「🎤 開始接收語音」亮綠燈後說出藥名或藥代";
-      }
-    }
-
-    function detachEvents(rec) {
-      if (!rec) return;
-      rec.onstart = null;
-      rec.onresult = null;
-      rec.onerror = null;
-      rec.onend = null;
-      rec.onspeechend = null;
-      rec.onaudioend = null;
-    }
-
-    // 當點選輸入框或儲存按鈕時，自動安全釋放麥克風，避免與手機鍵盤搶硬體通道
-    function safelyReleaseMic() {
-      clearTimeout(autoSettleTimer);
-      clearTimeout(startupWatchdogTimer);
-      if (activeRecognition) {
-        const rec = activeRecognition;
-        activeRecognition = null;
-        isVoiceListening = false;
-        detachEvents(rec);
-        try { rec.stop(); } catch (e) {}
-        updateVoiceControlUI("IDLE", "語音待命：麥克風已安全釋放，隨時可點「🎤 開始接收語音」盤點下一筆");
+        statusText.textContent = message || "[v4.7 語音待命] 點「🎤 開始接收語音」亮綠燈後說話，講完自動鎖定或按「⏹️ 停止」";
       }
     }
 
@@ -580,42 +602,32 @@
       }
 
       clearTimeout(autoSettleTimer);
-      clearTimeout(startupWatchdogTimer);
+      clearTimeout(manualStopWaitTimer);
+      isWaitingManualStop = false;
+      latestTranscript = "";
 
-      // 若前一個實例尚未關閉，先解除事件綁定並單獨呼叫 stop()（嚴禁同時呼叫 stop 與 abort）
-      if (activeRecognition) {
-        const prev = activeRecognition;
-        activeRecognition = null;
-        isVoiceListening = false;
-        detachEvents(prev);
-        try { prev.stop(); } catch (e) {}
-      }
-
-      // 收起手機虛擬鍵盤，釋放系統音訊焦點
       if (document.activeElement && typeof document.activeElement.blur === "function") {
         document.activeElement.blur();
       }
 
-      latestTranscript = "";
       const searchInput = document.getElementById("searchInput");
       searchInput.value = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
 
-      updateVoiceControlUI("STARTING", "🟡 正在啟動麥克風...");
+      updateVoiceControlUI("STARTING", "🟡 正在開啟麥克風...");
 
-      // 關鍵修正 1：在點擊事件同步執行緒內直接建立並呼叫 start()，絕不使用 setTimeout
+      // 同步手勢內直接啟動
       const recognition = new SpeechRecognition();
       activeRecognition = recognition;
+      hasUsedVoiceInThisDoc = true;
       recognition.lang = "zh-TW";
-      // 關鍵修正 2：設為 continuous = false，講完單筆藥名後自動釋放手機麥克風鎖
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         if (activeRecognition !== recognition) return;
-        clearTimeout(startupWatchdogTimer);
         isVoiceListening = true;
         updateVoiceControlUI("LISTENING", "🟢 綠燈收音中！請說出藥代或藥名（如 AM5、ASV、SEN）");
       };
@@ -624,7 +636,6 @@
         if (activeRecognition !== recognition) return;
         if (!event.results || event.results.length === 0) return;
 
-        // 關鍵修正 3：只讀取最新一個語音片段，絕不將前一次的 AM5 與這次的 ASV 串接
         const lastResult = event.results[event.results.length - 1];
         const rawChunk = lastResult[0].transcript || "";
         const isFinal = Boolean(lastResult.isFinal);
@@ -641,16 +652,20 @@
           );
 
           clearTimeout(autoSettleTimer);
-          if (isFinal) {
-            // 語音引擎已判定講完，立即正常結束並鎖定藥品
-            stopVoiceRecognition();
-          } else {
-            // 若講完後停頓 650ms 無新聲音，自動幫使用者結束收音並釋放麥克風！
+          clearTimeout(manualStopWaitTimer);
+
+          // 若使用者已經按了「⏹️ 停止」正在等這句結果，或語音引擎已判定 isFinal，立即鎖定並重置 Document
+          if (isWaitingManualStop || isFinal) {
             autoSettleTimer = setTimeout(() => {
-              if (activeRecognition === recognition && latestTranscript) {
-                stopVoiceRecognition();
+              commitVoiceAndResetDocument(latestTranscript);
+            }, 220);
+          } else {
+            // 若講完停頓 700ms，自動鎖定並執行 Document 無感重置
+            autoSettleTimer = setTimeout(() => {
+              if (latestTranscript) {
+                commitVoiceAndResetDocument(latestTranscript);
               }
-            }, 650);
+            }, 700);
           }
         }
       };
@@ -658,79 +673,130 @@
       recognition.onerror = (event) => {
         if (activeRecognition !== recognition) return;
         clearTimeout(autoSettleTimer);
-        clearTimeout(startupWatchdogTimer);
+        clearTimeout(manualStopWaitTimer);
         isVoiceListening = false;
-        const errCode = event.error || "unknown";
-        detachEvents(recognition);
-        activeRecognition = null;
 
         if (latestTranscript) {
-          finalizeVoiceSelection(latestTranscript);
-        } else if (errCode === "no-speech") {
-          updateVoiceControlUI("IDLE", "⚠️ 未偵測到語音（麥克風已安全釋放，請再點一次「🎤 開始接收語音」）");
-        } else if (errCode === "not-allowed") {
-          updateVoiceControlUI("IDLE", "⚠️ 麥克風權限被拒，請允許瀏覽器使用麥克風");
+          commitVoiceAndResetDocument(latestTranscript);
         } else {
-          updateVoiceControlUI("IDLE", `⚠️ 語音通道已重置 (${errCode})，請再點一次「🎤 開始接收語音」`);
+          // 即使沒收到聲音，只要啟動過一次硬體通道，也執行無感 Document 重置以確保下次點擊 100% 是全新第 1 筆
+          resetDocumentWithoutMatch("⚠️ 未偵測到語音（已自動重置麥克風通道，請再點一次「🎤 開始接收語音」）");
         }
       };
 
       recognition.onend = () => {
         if (activeRecognition !== recognition) return;
         clearTimeout(autoSettleTimer);
-        clearTimeout(startupWatchdogTimer);
+        clearTimeout(manualStopWaitTimer);
         isVoiceListening = false;
-        detachEvents(recognition);
-        activeRecognition = null;
 
         const finalVal = (latestTranscript || document.getElementById("searchInput").value).trim();
         if (finalVal) {
-          finalizeVoiceSelection(finalVal);
+          commitVoiceAndResetDocument(finalVal);
         } else {
-          updateVoiceControlUI("IDLE", "⏹️ 已停止收音並釋放麥克風。隨時可點「🎤 開始接收語音」");
+          resetDocumentWithoutMatch("⏹️ 已停止收音並重置麥克風通道。隨時可點「🎤 開始接收語音」");
         }
       };
 
       try {
         recognition.start();
-        // 看門狗保護：若 2.5 秒內手機未啟動 onstart，自動釋放重置
-        startupWatchdogTimer = setTimeout(() => {
-          if (activeRecognition === recognition && !isVoiceListening) {
-            detachEvents(recognition);
-            try { recognition.stop(); } catch (e) {}
-            activeRecognition = null;
-            updateVoiceControlUI("IDLE", "⚠️ 麥克風通道已自動重置，請再點一次「🎤 開始接收語音」");
-          }
-        }, 2500);
       } catch (err) {
-        clearTimeout(startupWatchdogTimer);
-        detachEvents(recognition);
-        activeRecognition = null;
-        isVoiceListening = false;
-        updateVoiceControlUI("IDLE", "⚠️ 啟動重試中，請再點一次「🎤 開始接收語音」");
+        resetDocumentWithoutMatch("⚠️ 麥克風通道已自動重置，請再點一次「🎤 開始接收語音」");
       }
     }
 
+    // 關鍵修正：點擊「⏹️ 停止接收並辨識」時，絕不提前拔除 onresult！
     function stopVoiceRecognition() {
       clearTimeout(autoSettleTimer);
-      clearTimeout(startupWatchdogTimer);
       const currentVal = (latestTranscript || document.getElementById("searchInput").value).trim();
+
+      // 若畫面上已經有辨識出的文字，直接鎖定並執行 Document 重置
+      if (currentVal) {
+        commitVoiceAndResetDocument(currentVal);
+        return;
+      }
+
+      // 若剛講完話、文字還在路上（尚未觸發 onresult），呼叫 stop() 並等待 650ms 讓 onresult/onend 把字送達
+      if (activeRecognition) {
+        isWaitingManualStop = true;
+        updateVoiceControlUI("STARTING", "⏳ 正在結算剛才的語音...");
+        try { activeRecognition.stop(); } catch (e) {}
+        manualStopWaitTimer = setTimeout(() => {
+          const delayedVal = (latestTranscript || document.getElementById("searchInput").value).trim();
+          if (delayedVal) {
+            commitVoiceAndResetDocument(delayedVal);
+          } else {
+            resetDocumentWithoutMatch("⏹️ 已停止收音並重置通道。請點「🎤 開始接收語音」再試一次");
+          }
+        }, 650);
+      } else {
+        updateVoiceControlUI("IDLE", "[v4.7 語音待命] 點「🎤 開始接收語音」亮綠燈後說話");
+      }
+    }
+
+    // 核心根治機制：鎖定藥品並執行 0.05 秒無感 Document Reload，強制瀏覽器底層 100% 釋放並重置語音通道！
+    function commitVoiceAndResetDocument(queryText) {
+      clearTimeout(autoSettleTimer);
+      clearTimeout(manualStopWaitTimer);
 
       if (activeRecognition) {
         const rec = activeRecognition;
         activeRecognition = null;
-        isVoiceListening = false;
-        detachEvents(rec);
-        // 關鍵修正 4：只呼叫 stop()，絕不混用 abort()，讓手機作業系統乾淨回收麥克風
-        try { rec.stop(); } catch (e) {}
+        rec.onstart = null;
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        try { rec.abort(); } catch (e) {}
       }
 
-      isVoiceListening = false;
-      if (currentVal) {
-        finalizeVoiceSelection(currentVal);
+      const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(queryText);
+
+      if (combined.length > 0) {
+        const bestMatch = exactCodeMatches[0] || exactNameMatches[0] || combined[0];
+        currentSelectedId = bestMatch.id;
+        appState.recentIds = [bestMatch.id, ...(appState.recentIds || []).filter(x => x !== bestMatch.id)].slice(0, 8);
+        saveState();
+
+        sessionStorage.setItem(VOICE_BRIDGE_KEY, JSON.stringify({
+          selectedId: bestMatch.id,
+          openDropdownQuery: combined.length > 1 ? queryText : "",
+          statusState: "DONE",
+          statusMsg: `✅ 已鎖定：「${queryText}」➔【${bestMatch.code} ${bestMatch.name}】（語音通道已自動重置，可直接點「🎤 開始」講下一筆）`,
+          toastMsg: `🎤 語音已鎖定：${bestMatch.code} ${bestMatch.name}`
+        }));
       } else {
-        updateVoiceControlUI("IDLE", "⏹️ 已停止收音並釋放麥克風。隨時可點「🎤 開始接收語音」盤點下一筆");
+        sessionStorage.setItem(VOICE_BRIDGE_KEY, JSON.stringify({
+          selectedId: currentSelectedId,
+          draftBatches: editingBatches,
+          statusState: "DONE",
+          statusMsg: `⚠️ 語音收到「${queryText}」，141 筆清單無此品項（通道已重置，可點「🎤 開始」重講）`,
+          toastMsg: `⚠️ 查無「${queryText}」`
+        }));
       }
+
+      // 執行無感網頁刷新，徹底重置手機 C++ 底層 Document Speech 控制器
+      window.location.reload();
+    }
+
+    function resetDocumentWithoutMatch(msg) {
+      clearTimeout(autoSettleTimer);
+      clearTimeout(manualStopWaitTimer);
+      if (activeRecognition) {
+        const rec = activeRecognition;
+        activeRecognition = null;
+        rec.onstart = null;
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        try { rec.abort(); } catch (e) {}
+      }
+      sessionStorage.setItem(VOICE_BRIDGE_KEY, JSON.stringify({
+        selectedId: currentSelectedId,
+        draftBatches: editingBatches,
+        statusState: "IDLE",
+        statusMsg: msg
+      }));
+      window.location.reload();
     }
 
     function previewDropdownOnly(rawQuery) {
@@ -746,27 +812,6 @@
         return;
       }
       renderDropdownItems(combined);
-    }
-
-    function finalizeVoiceSelection(queryText) {
-      const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(queryText);
-      if (combined.length > 0) {
-        const bestMatch = exactCodeMatches[0] || exactNameMatches[0] || combined[0];
-        const shouldCloseDropdown = combined.length === 1;
-        selectDrugById(bestMatch.id, shouldCloseDropdown);
-        if (!shouldCloseDropdown) renderDropdownItems(combined);
-        updateVoiceControlUI(
-          "DONE",
-          `✅ 已鎖定：「${queryText}」➔【${bestMatch.code} ${bestMatch.name}】（麥克風已釋放，可直接點「🎤 開始」講下一筆）`
-        );
-        showToast(`🎤 語音已鎖定：${bestMatch.code} ${bestMatch.name}`);
-      } else {
-        previewDropdownOnly(queryText);
-        updateVoiceControlUI(
-          "DONE",
-          `⚠️ 語音收到「${queryText}」，141 筆清單無此品項（請點「🎤 開始」重講）`
-        );
-      }
     }
 
     // =========================================================================
@@ -905,7 +950,6 @@
     }
 
     function clearSearch() {
-      safelyReleaseMic();
       const inputEl = document.getElementById("searchInput");
       inputEl.value = "";
       latestTranscript = "";
@@ -1039,7 +1083,6 @@
                   type="text"
                   id="qtyInput-${index}"
                   value="${escapeHtml(batch.qty)}"
-                  onfocus="safelyReleaseMic()"
                   oninput="onBatchQtyInput(${index}, this.value)"
                   placeholder="輸入數量或「開」"
                   class="w-full px-3 py-2.5 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black"
@@ -1060,7 +1103,6 @@
                   maxlength="4"
                   id="expiryInput-${index}"
                   value="${escapeHtml(batch.expiry)}"
-                  onfocus="safelyReleaseMic()"
                   oninput="onBatchExpiryInput(${index}, this.value)"
                   placeholder="如 2612"
                   class="w-full px-3 py-2.5 bg-white border-2 border-slate-300 focus:border-indigo-600 rounded-xl text-base font-mono font-black text-indigo-900 tracking-wider text-center"
@@ -1138,7 +1180,6 @@
     // 7. 批次欄位互動與儲存
     // =========================================================================
     function updateBatchFloor(index, floor) {
-      safelyReleaseMic();
       if (!editingBatches[index]) return;
       editingBatches[index].floor = floor;
       renderActiveDrugCard(currentSelectedId);
@@ -1159,7 +1200,6 @@
     }
 
     function fillOpenText(index) {
-      safelyReleaseMic();
       if (!editingBatches[index]) return;
       editingBatches[index].qty = "開";
       renderActiveDrugCard(currentSelectedId);
@@ -1193,7 +1233,6 @@
     }
 
     function addBatchRow() {
-      safelyReleaseMic();
       editingBatches.push({ floor: appState.defaultFloor, qty: "", expiry: "" });
       renderActiveDrugCard(currentSelectedId);
       setTimeout(() => {
@@ -1203,14 +1242,12 @@
     }
 
     function removeBatchRow(index) {
-      safelyReleaseMic();
       if (editingBatches.length <= 1) return;
       editingBatches.splice(index, 1);
       renderActiveDrugCard(currentSelectedId);
     }
 
     function saveCurrentDrugInventory() {
-      safelyReleaseMic();
       const drug = appState.drugs.find(d => d.id === currentSelectedId);
       if (!drug) return;
 
@@ -1251,11 +1288,24 @@
 
       editingBatches = validBatches.map(b => ({ ...b }));
       saveState();
+
+      const stats = calculateBatchStats(validBatches);
+
+      // 若本次頁面曾使用過語音，儲存時同步執行無感刷新，確保下一筆語音 100% 處於全新 Document 狀態
+      if (hasUsedVoiceInThisDoc) {
+        sessionStorage.setItem(VOICE_BRIDGE_KEY, JSON.stringify({
+          selectedId: drug.id,
+          statusState: "IDLE",
+          statusMsg: `[v4.7 語音待命] 已儲存 ${drug.code}，請點「🎤 開始接收語音」盤點下一筆`,
+          toastMsg: `✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}`
+        }));
+        window.location.reload();
+        return;
+      }
+
       renderQuickDrugPills();
       renderActiveDrugCard(drug.id);
       renderOverviewList();
-
-      const stats = calculateBatchStats(validBatches);
       showToast(`✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}`);
 
       document.getElementById("searchInput").value = "";
@@ -1490,7 +1540,6 @@
     }
 
     function switchTab(tabName) {
-      safelyReleaseMic();
       ["scan", "list", "manage"].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tabName);
         document.getElementById(`navBtn-${t}`).className = t === tabName
