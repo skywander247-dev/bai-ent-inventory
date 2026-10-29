@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="白耳盤點系統" />
-  <title>白耳鼻喉科｜行動藥品盤點系統 v4.8</title>
+  <title>白耳鼻喉科｜行動藥品盤點系統 v4.9</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -18,23 +18,29 @@
     .safe-bottom { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
     input:focus, select:focus { outline: none; }
     @keyframes pulse-ring {
-      0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @keyframes pulse-rose {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.75); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(225, 29, 72, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
     }
     .recording-pulse { animation: pulse-ring 1.4s infinite; }
+    .field-mic-pulse { animation: pulse-rose 1.2s infinite; }
   </style>
 </head>
 <body class="text-slate-800 min-h-screen safe-bottom">
 
   <!-- 頂部固定導覽與工作狀態列 -->
   <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-lg">
-    <div class="max-w-2xl mx-auto px-3 py-2.5">
+    <div class="max-w-2xl mx-auto px-3 py-2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5">
           <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider">ENT</span>
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
-          <span class="bg-cyan-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v4.8</span>
+          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v4.9</span>
         </div>
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
@@ -62,10 +68,10 @@
     </div>
   </header>
 
-  <main class="max-w-2xl mx-auto px-3 pt-3">
+  <main class="max-w-2xl mx-auto px-3 pt-2.5">
 
     <!-- 分頁 1：隨看隨盤作業區 -->
-    <section id="tab-scan" class="space-y-3">
+    <section id="tab-scan" class="space-y-2.5">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
         <div class="flex items-center justify-between mb-1.5">
           <label for="searchInput" class="text-xs font-bold text-slate-600 flex items-center gap-1">
@@ -80,28 +86,28 @@
             id="searchInput"
             oninput="handleSearchInput()"
             onkeydown="handleSearchKeydown(event)"
-            placeholder="輸入藥代(如 AM5、ASV)或點鍵盤右下角🎤說話..."
+            placeholder="輸入藥代(如 AM5、ASV)或點下方語音..."
             autocomplete="off"
-            class="w-full pl-3.5 pr-10 py-3 bg-slate-50 border-2 border-slate-300 focus:border-emerald-600 focus:bg-white rounded-xl text-base font-bold text-slate-900 placeholder-slate-400 transition"
+            class="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border-2 border-slate-300 focus:border-emerald-600 focus:bg-white rounded-xl text-base font-bold text-slate-900 placeholder-slate-400 transition"
           />
           <button
             type="button"
             id="clearSearchBtn"
             onclick="clearSearch()"
-            class="hidden absolute right-2.5 px-2 py-1.5 text-slate-400 hover:text-slate-600 text-sm font-bold"
+            class="hidden absolute right-2.5 px-2 py-1 text-slate-400 hover:text-slate-600 text-sm font-bold"
           >✕</button>
         </div>
 
         <!-- 雙按鈕語音控制區（常駐熱機不斷線架構） -->
-        <div class="mt-2.5 grid grid-cols-2 gap-2">
+        <div class="mt-2 grid grid-cols-2 gap-2">
           <button
             type="button"
             id="startVoiceBtn"
-            onclick="startVoiceRecognition()"
+            onclick="startDrugVoiceRecognition()"
             class="py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition"
           >
             <span class="text-base">🎤</span>
-            <span id="startVoiceBtnText">開始接收語音</span>
+            <span id="startVoiceBtnText">開始語音搜藥</span>
           </button>
 
           <button
@@ -117,16 +123,16 @@
         </div>
 
         <!-- 語音狀態橫幅 -->
-        <div id="voiceStatusBar" class="mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
-          <div class="flex items-center gap-2">
+        <div id="voiceStatusBar" class="mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
+          <div class="flex items-center gap-1.5">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600">[v4.8 常駐熱機模式] 點「🎤 開始接收語音」允許一次後，通道保持連線免等 30 秒，隨點隨講！</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v4.9 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
           </div>
         </div>
 
-        <div id="searchResultsDropdown" class="hidden mt-2 border-2 border-emerald-500 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xl max-h-72 overflow-y-auto"></div>
+        <div id="searchResultsDropdown" class="hidden mt-2 border-2 border-emerald-500 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xl max-h-64 overflow-y-auto"></div>
 
-        <div class="mt-2.5">
+        <div class="mt-2">
           <div class="text-[11px] text-slate-400 font-semibold mb-1">⚡ 快速點選（最近盤點 / 常用）：</div>
           <div class="flex flex-wrap items-center gap-1.5" id="quickDrugPills"></div>
         </div>
@@ -339,6 +345,8 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
 
+    let lastKnownRealDate = getTodayDateString();
+
     let appState = {
       workingDate: getTodayDateString(),
       defaultFloor: "1樓",
@@ -372,14 +380,18 @@
     }
 
     // =========================================================================
-    // 2. 初始化與資料持久化 (localStorage)
+    // 2. 初始化、資料持久化與「盤點日自動跟隨當日實際日期」機制
     // =========================================================================
     function initApp() {
       const saved = localStorage.getItem(STORAGE_KEY);
+      const todayStr = getTodayDateString();
+      lastKnownRealDate = todayStr;
+
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          appState.workingDate = parsed.workingDate || getTodayDateString();
+          // 關鍵修正 1：每次開啟系統時，強制自動將盤點日更新為今天的實際日期（不再停留在昨日舊日期）
+          appState.workingDate = todayStr;
           appState.defaultFloor = parsed.defaultFloor === "3樓" ? "3樓" : "1樓";
           appState.drugs = (Array.isArray(parsed.drugs) && parsed.drugs.length > 0)
             ? normalizeDrugList(parsed.drugs)
@@ -394,10 +406,9 @@
         } catch (e) {
           console.error("讀取快取失敗", e);
         }
-      } else {
-        saveState();
       }
 
+      saveState();
       document.getElementById("workingDateInput").value = appState.workingDate;
       updateDefaultFloorUI();
       renderQuickDrugPills();
@@ -406,6 +417,28 @@
       if (initialDrug) selectDrugById(initialDrug.id, true);
       renderOverviewList();
     }
+
+    // 當手機從背景喚醒（例如隔天 10/30 直接打開未關閉的桌面捷徑）時，自動檢查並同步為當日最新日期
+    function checkAndAutoSyncRealDate() {
+      const currentRealToday = getTodayDateString();
+      if (currentRealToday !== lastKnownRealDate) {
+        lastKnownRealDate = currentRealToday;
+        appState.workingDate = currentRealToday;
+        const dateInput = document.getElementById("workingDateInput");
+        if (dateInput) dateInput.value = currentRealToday;
+        saveState();
+        if (currentSelectedId) renderActiveDrugCard(currentSelectedId);
+        showToast(`📅 已自動切換為今日盤點日：${currentRealToday}`);
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        checkAndAutoSyncRealDate();
+      }
+    });
+    window.addEventListener("pageshow", checkAndAutoSyncRealDate);
+    window.addEventListener("focus", checkAndAutoSyncRealDate);
 
     function saveState() {
       appState.lastSelectedId = currentSelectedId;
@@ -471,18 +504,20 @@
     }
 
     // =========================================================================
-    // 4. v4.8 常駐熱機不斷線語音引擎（Keep-Alive Soft-Pause Architecture）
-    //    徹底避開 iOS 27.0.1 關閉麥克風後的 30 秒暫時授權死鎖期
+    // 4. v4.9 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
     // =========================================================================
     let sharedRecognition = null;
-    let isHardwareMicStreamOpen = false; // 底層麥克風串流是否保持開啟中
-    let isListeningWindowOpen = false;   // 目前是否處於「接收使用者語音指令」狀態
-    let fullCleanTranscript = "";        // 目前累積之完整轉譯字串
-    let consumedCleanTranscript = "";    // 上一筆已鎖定消耗之字串基準點
-    let currentDrugQueryBuffer = "";     // 本次收音區間辨識到的藥代/藥名
+    let isHardwareMicStreamOpen = false;
+    let isListeningWindowOpen = false;
+    // voiceTarget: { mode: 'DRUG' | 'QTY' | 'EXPIRY', batchIndex: null | number }
+    let voiceTarget = { mode: "DRUG", batchIndex: null };
+    let fullRawTranscript = "";
+    let consumedRawTranscript = "";
+    let currentSessionDeltaRaw = "";
     let autoLockTimer = null;
     let quickStopTimer = null;
 
+    // 藥品名稱與代碼轉譯
     function normalizeVoiceTranscript(rawText) {
       if (!rawText) return "";
       let s = String(rawText).replace(/[。，、？ ！?.,\s\-_]/g, "").trim();
@@ -510,7 +545,40 @@
       return s.replace(/__BIBAIXIN__/g, "必百欣").replace(/__ERQIANG__/g, "二羥");
     }
 
-    // 從常駐連續字串中精準切出「按下開始後新講出的藥品名稱」
+    // 專供「數量」與「效期」使用的單一數字逐碼轉譯器（例如念「一六」-> 16、「二五八」-> 258、「二八零四」-> 2804）
+    function normalizeSingleDigitsOnly(rawText) {
+      if (!rawText) return "";
+      let s = String(rawText);
+      // 萬一 iOS 語音引擎因為講太快把「一六」自動轉成「十六」，先做防呆還原為「16」
+      s = s.replace(/^十([一二三四五六七八九])/g, "1$1");
+      s = s.replace(/([一二兩三四五六七八九])十([一二三四五六七八九])/g, "$1$2");
+      s = s.replace(/([一二兩三四五六七八九])十/g, "$10");
+      s = s.replace(/十/g, "10");
+
+      const digitCharMap = {
+        "零": "0", "〇": "0", "洞": "0", "林": "0", "玲": "0", "凌": "0", "靈": "0",
+        "一": "1", "壹": "1", "么": "1", "幺": "1", "衣": "1", "醫": "1", "依": "1",
+        "二": "2", "貳": "2", "兩": "2", "耳": "2", "餓": "2",
+        "三": "3", "參": "3", "叁": "3", "山": "3", "衫": "3",
+        "四": "4", "肆": "4", "是": "4", "事": "4", "試": "4", "市": "4", "世": "4",
+        "五": "5", "伍": "5", "午": "5", "武": "5", "舞": "5",
+        "六": "6", "陸": "6", "溜": "6", "流": "6", "留": "6",
+        "七": "7", "柒": "7", "期": "7", "妻": "7", "漆": "7", "棲": "7",
+        "八": "8", "捌": "8", "巴": "8", "吧": "8", "發": "8", "爸": "8",
+        "九": "9", "玖": "9", "久": "9", "酒": "9", "揪": "9"
+      };
+
+      let result = "";
+      for (const ch of s) {
+        if (/[0-9]/.test(ch)) {
+          result += ch;
+        } else if (digitCharMap[ch] !== undefined) {
+          result += digitCharMap[ch];
+        }
+      }
+      return result;
+    }
+
     function extractDeltaSpeech(fullStr, baseStr) {
       if (!baseStr) return fullStr;
       if (fullStr.startsWith(baseStr)) {
@@ -522,6 +590,55 @@
         i++;
       }
       return fullStr.slice(i);
+    }
+
+    function getTargetLabel() {
+      if (voiceTarget.mode === "QTY") return `批次 #${voiceTarget.batchIndex + 1}【數量】`;
+      if (voiceTarget.mode === "EXPIRY") return `批次 #${voiceTarget.batchIndex + 1}【效期】`;
+      return "【藥品搜尋】";
+    }
+
+    // 動態更新數量與效期欄位內的迷你語音按鈕狀態，不重繪整張卡片避免跳動
+    function refreshFieldMicButtonsUI() {
+      editingBatches.forEach((_, idx) => {
+        const qtyBtn = document.getElementById(`qtyVoiceBtn-${idx}`);
+        const expBtn = document.getElementById(`expVoiceBtn-${idx}`);
+        const qtyInput = document.getElementById(`qtyInput-${idx}`);
+        const expInput = document.getElementById(`expiryInput-${idx}`);
+
+        const isQtyActive = isListeningWindowOpen && voiceTarget.mode === "QTY" && voiceTarget.batchIndex === idx;
+        const isExpActive = isListeningWindowOpen && voiceTarget.mode === "EXPIRY" && voiceTarget.batchIndex === idx;
+
+        if (qtyBtn) {
+          if (isQtyActive) {
+            qtyBtn.className = "absolute right-1 w-8 h-8 rounded-lg bg-rose-600 text-white text-xs font-black flex items-center justify-center shadow field-mic-pulse transition";
+            qtyBtn.textContent = "⏹️";
+          } else {
+            qtyBtn.className = "absolute right-1 w-8 h-8 rounded-lg bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 text-emerald-900 border border-emerald-300 text-xs font-black flex items-center justify-center transition";
+            qtyBtn.textContent = "🎤";
+          }
+        }
+        if (qtyInput && isQtyActive) {
+          qtyInput.classList.add("border-rose-500", "ring-2", "ring-rose-200");
+        } else if (qtyInput) {
+          qtyInput.classList.remove("border-rose-500", "ring-2", "ring-rose-200");
+        }
+
+        if (expBtn) {
+          if (isExpActive) {
+            expBtn.className = "absolute right-1 w-8 h-8 rounded-lg bg-rose-600 text-white text-xs font-black flex items-center justify-center shadow field-mic-pulse transition";
+            expBtn.textContent = "⏹️";
+          } else {
+            expBtn.className = "absolute right-1 w-8 h-8 rounded-lg bg-indigo-100 hover:bg-indigo-200 active:bg-indigo-300 text-indigo-900 border border-indigo-300 text-xs font-black flex items-center justify-center transition";
+            expBtn.textContent = "🎤";
+          }
+        }
+        if (expInput && isExpActive) {
+          expInput.classList.add("border-rose-500", "ring-2", "ring-rose-200");
+        } else if (expInput) {
+          expInput.classList.remove("border-rose-500", "ring-2", "ring-rose-200");
+        }
+      });
     }
 
     function updateVoiceControlUI(state, message) {
@@ -537,38 +654,39 @@
         startBtnText.textContent = "啟動麥克風中...";
         stopBtn.disabled = false;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-rose-600 text-white shadow-sm transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-50 text-xs flex items-center justify-between gap-2";
+        statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border-2 border-amber-400 bg-amber-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-3 h-3 rounded-full bg-amber-500 inline-block shrink-0 animate-ping";
-        statusText.className = "font-black text-amber-900";
+        statusText.className = "font-black text-amber-900 leading-snug";
         statusText.textContent = message || "🟡 請在彈出視窗點選「允許」...";
       } else if (state === "LISTENING") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 text-white recording-pulse transition";
-        startBtnText.textContent = "正在收音中 (點此重講)";
+        startBtnText.textContent = voiceTarget.mode === "DRUG" ? "收音搜藥中..." : "語音搜藥 (切換)";
         stopBtn.disabled = false;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-md transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-xs flex items-center justify-between gap-2";
+        statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 inline-block shrink-0 animate-pulse";
-        statusText.className = "font-black text-emerald-900";
-        statusText.textContent = message || "🟢 綠燈收音中！請直接說出藥代或藥名（講完自動鎖定或按「⏹️ 停止」）";
+        statusText.className = "font-black text-emerald-900 leading-snug";
+        statusText.textContent = message || "🟢 綠燈收音中！";
       } else if (state === "DONE") {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
-        startBtnText.textContent = "開始接收語音 (講下一筆)";
+        startBtnText.textContent = "開始語音搜藥";
         stopBtn.disabled = true;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-slate-200 text-slate-400 cursor-not-allowed transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs flex items-center justify-between gap-2";
+        statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block shrink-0";
-        statusText.className = "font-bold text-indigo-900";
-        statusText.textContent = message || "✅ 已鎖定藥品！（常駐熱機中，免等30秒可隨時點「🎤 開始」講下一筆）";
+        statusText.className = "font-bold text-indigo-900 leading-snug";
+        statusText.textContent = message || "✅ 語音已鎖定！（常駐熱機中，可隨時點任意 🎤 繼續念）";
       } else {
         startBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm transition";
-        startBtnText.textContent = "開始接收語音";
+        startBtnText.textContent = "開始語音搜藥";
         stopBtn.disabled = true;
         stopBtn.className = "py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-slate-200 text-slate-400 cursor-not-allowed transition";
-        statusBar.className = "mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
+        statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
-        statusText.className = "font-bold text-slate-600";
-        statusText.textContent = message || "[v4.8 常駐熱機模式] 點「🎤 開始接收語音」允許一次後，通道保持連線免等 30 秒！";
+        statusText.className = "font-bold text-slate-600 leading-snug";
+        statusText.textContent = message || "[v4.9 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
       }
+      refreshFieldMicButtonsUI();
     }
 
     function ensureSingletonRecognition() {
@@ -577,7 +695,6 @@
       if (sharedRecognition) return sharedRecognition;
 
       const recognition = new SpeechRecognition();
-      // 關鍵設定：開啟 continuous = true 常駐模式，講完第 1 筆絕不掛斷底層麥克風！
       recognition.lang = "zh-TW";
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -586,7 +703,10 @@
       recognition.onstart = () => {
         isHardwareMicStreamOpen = true;
         if (isListeningWindowOpen) {
-          updateVoiceControlUI("LISTENING", "🟢 綠燈收音中！請說出藥代或藥名（如 AM5、ASV、SEN）");
+          const hint = voiceTarget.mode === "DRUG"
+            ? "🟢 綠燈收音中！請說出藥代或藥名（如 AM5、ASV）"
+            : `🟢 正在聽取${getTargetLabel()}！請直接念單一數字（如二五八、二八零四）`;
+          updateVoiceControlUI("LISTENING", hint);
         }
       };
 
@@ -596,37 +716,76 @@
         for (let i = 0; i < event.results.length; i++) {
           rawAll += event.results[i][0].transcript || "";
         }
-        fullCleanTranscript = normalizeVoiceTranscript(rawAll);
+        fullRawTranscript = rawAll.replace(/[。，、？ ！?.,\s\-_]/g, "");
 
-        // 若目前處於「已鎖定上一筆（Soft-Pause）」狀態，自動把背景聲音吞掉更新基準點，不干擾畫面
         if (!isListeningWindowOpen) {
-          consumedCleanTranscript = fullCleanTranscript;
+          consumedRawTranscript = fullRawTranscript;
           return;
         }
 
-        // 切出本次點擊「開始」後新講出的藥品字詞
-        const deltaClean = extractDeltaSpeech(fullCleanTranscript, consumedCleanTranscript);
-        if (!deltaClean) return;
+        const deltaRaw = extractDeltaSpeech(fullRawTranscript, consumedRawTranscript);
+        if (!deltaRaw) return;
 
-        currentDrugQueryBuffer = deltaClean;
-        const searchInput = document.getElementById("searchInput");
-        searchInput.value = deltaClean;
-        document.getElementById("clearSearchBtn").classList.remove("hidden");
-        previewDropdownOnly(deltaClean);
+        currentSessionDeltaRaw = deltaRaw;
 
-        updateVoiceControlUI(
-          "LISTENING",
-          `🟢 聽取到：「${deltaClean}」（講完停頓 0.7 秒自動鎖定，或按「⏹️ 停止」）`
-        );
+        // 分流處理：藥品搜尋 vs 數量單一數字 vs 效期單一數字
+        if (voiceTarget.mode === "DRUG") {
+          const cleanDrug = normalizeVoiceTranscript(deltaRaw);
+          if (!cleanDrug) return;
+          const searchInput = document.getElementById("searchInput");
+          searchInput.value = cleanDrug;
+          document.getElementById("clearSearchBtn").classList.remove("hidden");
+          previewDropdownOnly(cleanDrug);
+          updateVoiceControlUI("LISTENING", `🟢 藥品聽取中：「${cleanDrug}」`);
 
-        clearTimeout(autoLockTimer);
-        clearTimeout(quickStopTimer);
-        // 講完停頓 750ms 自動執行軟體鎖定（保持底層麥克風不斷線！）
-        autoLockTimer = setTimeout(() => {
-          if (isListeningWindowOpen && currentDrugQueryBuffer) {
-            softLockVoiceResult(currentDrugQueryBuffer);
+          clearTimeout(autoLockTimer);
+          clearTimeout(quickStopTimer);
+          autoLockTimer = setTimeout(() => {
+            if (isListeningWindowOpen && currentSessionDeltaRaw) {
+              softLockVoiceResult(currentSessionDeltaRaw);
+            }
+          }, 750);
+        } else if (voiceTarget.mode === "QTY") {
+          const digits = normalizeSingleDigitsOnly(deltaRaw);
+          if (!digits) return;
+          const idx = voiceTarget.batchIndex;
+          if (editingBatches[idx]) {
+            editingBatches[idx].qty = digits;
+            const qtyEl = document.getElementById(`qtyInput-${idx}`);
+            if (qtyEl) qtyEl.value = digits;
+            onBatchQtyInput(idx, digits);
           }
-        }, 750);
+          updateVoiceControlUI("LISTENING", `🟢 ${getTargetLabel()}聽取中：「${deltaRaw}」➔ 填入數字【${digits}】`);
+
+          clearTimeout(autoLockTimer);
+          clearTimeout(quickStopTimer);
+          autoLockTimer = setTimeout(() => {
+            if (isListeningWindowOpen && currentSessionDeltaRaw) {
+              softLockVoiceResult(currentSessionDeltaRaw);
+            }
+          }, 650);
+        } else if (voiceTarget.mode === "EXPIRY") {
+          const digits = normalizeSingleDigitsOnly(deltaRaw).slice(0, 4);
+          if (!digits) return;
+          const idx = voiceTarget.batchIndex;
+          if (editingBatches[idx]) {
+            editingBatches[idx].expiry = digits;
+            const expEl = document.getElementById(`expiryInput-${idx}`);
+            if (expEl) expEl.value = digits;
+            onBatchExpiryInput(idx, digits);
+          }
+          updateVoiceControlUI("LISTENING", `🟢 ${getTargetLabel()}聽取中：「${deltaRaw}」➔ 填入4碼【${digits}】`);
+
+          clearTimeout(autoLockTimer);
+          clearTimeout(quickStopTimer);
+          // 若效期已經念滿 4 碼數字（例如 2804），加快於 350ms 自動鎖定！
+          const waitMs = digits.length >= 4 ? 350 : 650;
+          autoLockTimer = setTimeout(() => {
+            if (isListeningWindowOpen && currentSessionDeltaRaw) {
+              softLockVoiceResult(currentSessionDeltaRaw);
+            }
+          }, waitMs);
+        }
       };
 
       recognition.onerror = (event) => {
@@ -636,16 +795,15 @@
         if (err === "not-allowed") {
           isHardwareMicStreamOpen = false;
           isListeningWindowOpen = false;
-          updateVoiceControlUI("IDLE", "⚠️ 麥克風未允許。請至 iPhone「設定 ➔ App ➔ Safari ➔ 麥克風」改為「允許」");
+          updateVoiceControlUI("IDLE", "⚠️ 麥克風未允許。請點「允許」或檢查 Safari 麥克風設定");
         } else if (err === "no-speech") {
-          // 無語音時不關閉常駐狀態
-          if (isListeningWindowOpen && currentDrugQueryBuffer) {
-            softLockVoiceResult(currentDrugQueryBuffer);
+          if (isListeningWindowOpen && currentSessionDeltaRaw) {
+            softLockVoiceResult(currentSessionDeltaRaw);
           }
         } else {
           isHardwareMicStreamOpen = false;
           isListeningWindowOpen = false;
-          updateVoiceControlUI("IDLE", `⚠️ 語音通道待機中 (${err})，請點「🎤 開始接收語音」繼續`);
+          updateVoiceControlUI("IDLE", `⚠️ 語音通道待機中 (${err})，請再點一次 🎤`);
         }
       };
 
@@ -655,10 +813,10 @@
         clearTimeout(quickStopTimer);
         if (isListeningWindowOpen) {
           isListeningWindowOpen = false;
-          if (currentDrugQueryBuffer) {
-            softLockVoiceResult(currentDrugQueryBuffer);
+          if (currentSessionDeltaRaw) {
+            softLockVoiceResult(currentSessionDeltaRaw);
           } else {
-            updateVoiceControlUI("IDLE", "⏹️ 語音待機中，請點「🎤 開始接收語音」");
+            updateVoiceControlUI("IDLE", "⏹️ 語音待機中，請點「🎤」開始說話");
           }
         }
       };
@@ -667,7 +825,57 @@
       return recognition;
     }
 
-    function startVoiceRecognition() {
+    // 啟動上方「藥品搜尋」語音
+    function startDrugVoiceRecognition() {
+      // 若正在對數量或效期收音，且已有內容，先幫該欄位結算鎖定
+      if (isListeningWindowOpen && voiceTarget.mode !== "DRUG" && currentSessionDeltaRaw) {
+        softLockVoiceResult(currentSessionDeltaRaw);
+      }
+      voiceTarget = { mode: "DRUG", batchIndex: null };
+      const searchInput = document.getElementById("searchInput");
+      searchInput.value = "";
+      document.getElementById("clearSearchBtn").classList.add("hidden");
+      document.getElementById("searchResultsDropdown").classList.add("hidden");
+
+      activateKeepAliveVoiceWindow("🟢 綠燈收音中！請直接說出藥品代碼或名稱...");
+    }
+
+    // 啟動或停止批次列內的「數量 (QTY)」或「效期 (EXPIRY)」單一數字語音
+    function toggleFieldVoice(mode, batchIndex) {
+      // 若使用者點擊的是目前正在收音中的同一顆欄位按鈕 ⏹️，則立即停止並鎖定該欄位！
+      if (isListeningWindowOpen && voiceTarget.mode === mode && voiceTarget.batchIndex === batchIndex) {
+        stopVoiceRecognition();
+        return;
+      }
+
+      // 若原本正在對另一個欄位收音且有內容，先將上一欄位鎖定
+      if (isListeningWindowOpen && currentSessionDeltaRaw) {
+        softLockVoiceResult(currentSessionDeltaRaw);
+      }
+
+      // 收起手機虛擬鍵盤，避免鍵盤與語音衝突
+      if (document.activeElement && typeof document.activeElement.blur === "function") {
+        document.activeElement.blur();
+      }
+
+      voiceTarget = { mode, batchIndex };
+
+      if (mode === "QTY" && editingBatches[batchIndex]) {
+        editingBatches[batchIndex].qty = "";
+        const qtyEl = document.getElementById(`qtyInput-${batchIndex}`);
+        if (qtyEl) qtyEl.value = "";
+        onBatchQtyInput(batchIndex, "");
+        activateKeepAliveVoiceWindow(`🟢 請念批次 #${batchIndex + 1}【數量】單一數字（如：一六、二五八）...`);
+      } else if (mode === "EXPIRY" && editingBatches[batchIndex]) {
+        editingBatches[batchIndex].expiry = "";
+        const expEl = document.getElementById(`expiryInput-${batchIndex}`);
+        if (expEl) expEl.value = "";
+        onBatchExpiryInput(batchIndex, "");
+        activateKeepAliveVoiceWindow(`🟢 請念批次 #${batchIndex + 1}【效期】4碼單一數字（如：二八零四）...`);
+      }
+    }
+
+    function activateKeepAliveVoiceWindow(listeningPrompt) {
       const recognition = ensureSingletonRecognition();
       if (!recognition) {
         showToast("⚠️ 您的瀏覽器不支援語音輸入");
@@ -676,95 +884,110 @@
 
       clearTimeout(autoLockTimer);
       clearTimeout(quickStopTimer);
+      currentSessionDeltaRaw = "";
 
-      const searchInput = document.getElementById("searchInput");
-      searchInput.value = "";
-      currentDrugQueryBuffer = "";
-      document.getElementById("clearSearchBtn").classList.add("hidden");
-      document.getElementById("searchResultsDropdown").classList.add("hidden");
-
-      // 【關鍵突破】：若第 1 筆開啟的底層麥克風串流仍在連線中 (isHardwareMicStreamOpen === true)，
-      // 絕不呼叫 stop() 或 start() 重啟硬體，直接歸零字串基準點並進入收音狀態！10~30秒內第2筆、第3筆 100% 零延遲反應！
       if (isHardwareMicStreamOpen) {
-        consumedCleanTranscript = fullCleanTranscript;
+        consumedRawTranscript = fullRawTranscript;
         isListeningWindowOpen = true;
-        updateVoiceControlUI("LISTENING", "🟢 綠燈收音中（常駐熱機零延遲）！請直接說出下一筆藥名或藥代...");
+        updateVoiceControlUI("LISTENING", listeningPrompt);
         return;
       }
 
-      // 若底層麥克風尚未開啟（剛打開 App 第 1 筆，或閒置超過 1 分鐘自然休眠）
-      fullCleanTranscript = "";
-      consumedCleanTranscript = "";
+      fullRawTranscript = "";
+      consumedRawTranscript = "";
       isListeningWindowOpen = true;
       updateVoiceControlUI("STARTING", "🟡 正在啟動麥克風（若跳出視窗請點「允許」）...");
 
       try {
         recognition.start();
       } catch (err) {
-        // 萬一瀏覽器認定串流其實還活著 (InvalidStateError)，直接切換為熱機收音模式
         isHardwareMicStreamOpen = true;
-        consumedCleanTranscript = fullCleanTranscript;
+        consumedRawTranscript = fullRawTranscript;
         isListeningWindowOpen = true;
-        updateVoiceControlUI("LISTENING", "🟢 綠燈收音中！請直接說出藥代或藥名...");
+        updateVoiceControlUI("LISTENING", listeningPrompt);
       }
     }
 
-    // 點擊「⏹️ 停止接收並辨識」：只做軟體鎖定 (Soft-Pause)，絕不切斷底層麥克風連線！
     function stopVoiceRecognition() {
       clearTimeout(autoLockTimer);
       clearTimeout(quickStopTimer);
 
-      const immediateVal = (currentDrugQueryBuffer || document.getElementById("searchInput").value).trim();
-      if (immediateVal) {
-        softLockVoiceResult(immediateVal);
+      if (currentSessionDeltaRaw) {
+        softLockVoiceResult(currentSessionDeltaRaw);
         return;
       }
 
-      // 若剛講完瞬間就按停止（文字還在回傳途中），等待 450ms 接收尾音後自動軟體鎖定
       updateVoiceControlUI("STARTING", "⏳ 正在結算剛才的語音...");
       quickStopTimer = setTimeout(() => {
-        const delayedVal = (currentDrugQueryBuffer || document.getElementById("searchInput").value).trim();
-        if (delayedVal) {
-          softLockVoiceResult(delayedVal);
+        if (currentSessionDeltaRaw) {
+          softLockVoiceResult(currentSessionDeltaRaw);
         } else {
           isListeningWindowOpen = false;
-          consumedCleanTranscript = fullCleanTranscript;
-          updateVoiceControlUI(
-            "DONE",
-            "⏹️ 已暫停收音（麥克風保持熱機連線中，隨時點「🎤 開始」即可秒講下一筆！）"
-          );
+          consumedRawTranscript = fullRawTranscript;
+          updateVoiceControlUI("DONE", "⏹️ 已暫停收音（常駐熱機保持中，隨時可點任意 🎤 繼續念）");
         }
-      }, 450);
+      }, 400);
     }
 
-    // 軟體鎖定辨識結果（不掛斷底層麥克風，徹底避開 iOS 30 秒死鎖）
-    function softLockVoiceResult(rawQuery) {
+    function softLockVoiceResult(rawDelta) {
       clearTimeout(autoLockTimer);
       clearTimeout(quickStopTimer);
 
+      const targetMode = voiceTarget.mode;
+      const targetIdx = voiceTarget.batchIndex;
+
       isListeningWindowOpen = false;
-      consumedCleanTranscript = fullCleanTranscript;
-      const cleanQuery = normalizeVoiceTranscript(rawQuery);
-      currentDrugQueryBuffer = "";
+      consumedRawTranscript = fullRawTranscript;
+      currentSessionDeltaRaw = "";
 
-      const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(cleanQuery);
-      if (combined.length > 0) {
-        const bestMatch = exactCodeMatches[0] || exactNameMatches[0] || combined[0];
-        const shouldCloseDropdown = combined.length === 1;
-        selectDrugById(bestMatch.id, shouldCloseDropdown);
-        if (!shouldCloseDropdown) renderDropdownItems(combined);
+      if (targetMode === "DRUG") {
+        const cleanQuery = normalizeVoiceTranscript(rawDelta);
+        const { exactCodeMatches, exactNameMatches, combined } = getMatchedDrugs(cleanQuery);
+        if (combined.length > 0) {
+          const bestMatch = exactCodeMatches[0] || exactNameMatches[0] || combined[0];
+          const shouldCloseDropdown = combined.length === 1;
+          selectDrugById(bestMatch.id, shouldCloseDropdown);
+          if (!shouldCloseDropdown) renderDropdownItems(combined);
 
-        updateVoiceControlUI(
-          "DONE",
-          `✅ 已鎖定：「${cleanQuery}」➔【${bestMatch.code} ${bestMatch.name}】（熱機保持中，免等30秒可直接點「🎤 開始」講下一筆）`
-        );
-        showToast(`🎤 語音已鎖定：${bestMatch.code} ${bestMatch.name}`);
-      } else {
-        previewDropdownOnly(cleanQuery);
-        updateVoiceControlUI(
-          "DONE",
-          `⚠️ 語音收到「${cleanQuery}」，141 筆清單無此品項（可直接點「🎤 開始」重講）`
-        );
+          updateVoiceControlUI(
+            "DONE",
+            `✅ 已鎖定藥品：【${bestMatch.code} ${bestMatch.name}】（可直接點下方數量/效期格內的 🎤 念數字！）`
+          );
+          showToast(`🎤 藥品已鎖定：${bestMatch.code} ${bestMatch.name}`);
+        } else {
+          previewDropdownOnly(cleanQuery);
+          updateVoiceControlUI("DONE", `⚠️ 語音收到「${cleanQuery}」，清單無此藥品`);
+        }
+      } else if (targetMode === "QTY") {
+        const digits = normalizeSingleDigitsOnly(rawDelta);
+        if (digits && editingBatches[targetIdx]) {
+          editingBatches[targetIdx].qty = digits;
+          const qtyEl = document.getElementById(`qtyInput-${targetIdx}`);
+          if (qtyEl) qtyEl.value = digits;
+          onBatchQtyInput(targetIdx, digits);
+          updateVoiceControlUI(
+            "DONE",
+            `✅ 批次 #${targetIdx + 1}【數量】已填入：${digits}（可接著點右側效期格內的 🎤 念效期！）`
+          );
+          showToast(`🔢 數量已填入：${digits}`);
+        } else {
+          updateVoiceControlUI("DONE", `⚠️ 未辨識到數字（請再點數量格內的 🎤 念單一數字如「一六」）`);
+        }
+      } else if (targetMode === "EXPIRY") {
+        const digits = normalizeSingleDigitsOnly(rawDelta).slice(0, 4);
+        if (digits && editingBatches[targetIdx]) {
+          editingBatches[targetIdx].expiry = digits;
+          const expEl = document.getElementById(`expiryInput-${targetIdx}`);
+          if (expEl) expEl.value = digits;
+          onBatchExpiryInput(targetIdx, digits);
+          updateVoiceControlUI(
+            "DONE",
+            `✅ 批次 #${targetIdx + 1}【效期】已填入：${digits}（確認無誤可點下方「💾 儲存」）`
+          );
+          showToast(`📅 效期已填入：${digits}`);
+        } else {
+          updateVoiceControlUI("DONE", `⚠️ 未辨識到數字（請再點效期格內的 🎤 念單一數字如「二八零四」）`);
+        }
       }
     }
 
@@ -784,7 +1007,7 @@
     }
 
     // =========================================================================
-    // 5. 階梯式精準搜尋與快速選藥（支援搜尋框直接用 iPhone 鍵盤麥克風自動轉譯）
+    // 5. 階梯式精準搜尋與快速選藥
     // =========================================================================
     function renderQuickDrugPills() {
       const container = document.getElementById("quickDrugPills");
@@ -922,14 +1145,14 @@
     function clearSearch() {
       const inputEl = document.getElementById("searchInput");
       inputEl.value = "";
-      currentDrugQueryBuffer = "";
+      currentSessionDeltaRaw = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
       inputEl.focus();
     }
 
     // =========================================================================
-    // 6. 選中藥品並渲染專屬盤點卡
+    // 6. 選中藥品並渲染專屬盤點卡（針對手機小螢幕最佳化之雙欄內嵌 🎤 設計）
     // =========================================================================
     function selectDrugById(id, closeDropdown = true) {
       const drug = appState.drugs.find(d => d.id === id);
@@ -988,8 +1211,8 @@
         }).join("");
 
         siblingSwitchBar = `
-          <div class="mb-3 bg-indigo-50/90 border border-indigo-200 rounded-xl p-2.5">
-            <div class="text-[11px] font-bold text-indigo-900 mb-1.5">🔗 同藥代／同品名關聯品項（點擊切換獨立盤點）：</div>
+          <div class="mb-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl p-2">
+            <div class="text-[11px] font-bold text-indigo-900 mb-1">🔗 同藥代／同品名關聯品項（點擊切換獨立盤點）：</div>
             <div class="flex flex-wrap gap-1.5">${buttonsHtml}</div>
           </div>
         `;
@@ -1010,74 +1233,95 @@
         }).join(" ");
 
         previousReviewBanner = `
-          <div class="mb-3 rounded-xl border-2 ${isDifferentDay ? 'bg-amber-50 border-amber-400' : 'bg-emerald-50 border-emerald-300'} p-3">
+          <div class="mb-2.5 rounded-xl border-2 ${isDifferentDay ? 'bg-amber-50 border-amber-400' : 'bg-emerald-50 border-emerald-300'} p-2.5">
             <div class="flex flex-wrap items-center justify-between gap-1">
               <div class="text-xs font-black ${isDifferentDay ? 'text-amber-900' : 'text-emerald-900'} flex items-center gap-1">
-                <span>📌 上次盤點日期：${escapeHtml(rec.lastUpdatedDate)}</span>
-                ${isDifferentDay ? `<span class="bg-amber-300 text-amber-950 px-1.5 py-0.5 rounded text-[10px]">跨日複盤修改模式 (${escapeHtml(appState.workingDate)})</span>` : `<span class="bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded text-[10px]">當日已盤點</span>`}
+                <span>📌 上次盤點日：${escapeHtml(rec.lastUpdatedDate)}</span>
+                ${isDifferentDay ? `<span class="bg-amber-300 text-amber-950 px-1.5 py-0.5 rounded text-[10px]">跨日複盤 (${escapeHtml(appState.workingDate)})</span>` : `<span class="bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded text-[10px]">當日已盤點</span>`}
               </div>
               <div class="text-xs font-bold text-slate-700">
-                上次數字總量：<span class="font-black text-sm text-slate-900">${prevStats.totalNumeric}</span>
-                <span class="text-[11px] text-slate-500">（1樓: ${prevStats.floor1Numeric} / 3樓: ${prevStats.floor3Numeric}）</span>
+                上次總量：<span class="font-black text-sm text-slate-900">${prevStats.totalNumeric}</span>
+                <span class="text-[11px] text-slate-500">（1樓:${prevStats.floor1Numeric}/3樓:${prevStats.floor3Numeric}）</span>
               </div>
             </div>
-            <div class="mt-2 flex flex-wrap gap-1.5">${batchSummaryBadges}</div>
+            <div class="mt-1.5 flex flex-wrap gap-1.5">${batchSummaryBadges}</div>
           </div>
         `;
       }
 
+      // 手機小螢幕最佳化批次列：50%/50% 對稱雙欄 + 輸入框右側內嵌 32x32px 🎤 語音鈕
       const batchRowsHtml = editingBatches.map((batch, index) => {
         const isFloor1 = batch.floor !== "3樓";
         const isQtyText = batch.qty.trim() !== "" && !isStrictNumericQty(batch.qty);
 
         return `
-          <div class="bg-slate-50 border-2 border-slate-200 rounded-xl p-3 relative transition">
-            <div class="flex items-center justify-between gap-2 mb-2.5">
-              <div class="flex items-center gap-2">
+          <div class="bg-slate-50 border-2 border-slate-200 rounded-xl p-2.5 relative transition">
+            <div class="flex items-center justify-between gap-1.5 mb-2">
+              <div class="flex items-center gap-1.5">
                 <span class="bg-slate-800 text-white text-xs font-black px-2 py-0.5 rounded-md">批次 #${index + 1}</span>
                 <div class="inline-flex rounded-lg bg-slate-200 p-0.5 border border-slate-300">
-                  <button type="button" onclick="updateBatchFloor(${index}, '1樓')" class="px-3 py-1 rounded-md text-xs font-black transition ${isFloor1 ? 'bg-emerald-600 text-white shadow' : 'text-slate-600'}">1樓</button>
-                  <button type="button" onclick="updateBatchFloor(${index}, '3樓')" class="px-3 py-1 rounded-md text-xs font-black transition ${!isFloor1 ? 'bg-sky-600 text-white shadow' : 'text-slate-600'}">3樓</button>
+                  <button type="button" onclick="updateBatchFloor(${index}, '1樓')" class="px-2.5 py-0.5 rounded-md text-xs font-black transition ${isFloor1 ? 'bg-emerald-600 text-white shadow' : 'text-slate-600'}">1樓</button>
+                  <button type="button" onclick="updateBatchFloor(${index}, '3樓')" class="px-2.5 py-0.5 rounded-md text-xs font-black transition ${!isFloor1 ? 'bg-sky-600 text-white shadow' : 'text-slate-600'}">3樓</button>
                 </div>
               </div>
-              ${editingBatches.length > 1 ? `<button type="button" onclick="removeBatchRow(${index})" class="text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-xs font-bold">✕ 刪除此批</button>` : ''}
+              ${editingBatches.length > 1 ? `<button type="button" onclick="removeBatchRow(${index})" class="text-rose-600 hover:bg-rose-100 px-2 py-0.5 rounded-lg text-xs font-bold">✕ 刪除</button>` : ''}
             </div>
 
-            <div class="grid grid-cols-12 gap-2.5 items-start">
-              <div class="col-span-7">
+            <div class="grid grid-cols-2 gap-2 items-start">
+              <!-- 左欄：數量 (支援手打、填入「開」、內嵌🎤念單一數字) -->
+              <div>
                 <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-slate-700">數量 <span class="text-[11px] font-normal text-slate-500">(數字或「開」)</span></label>
-                  <button type="button" onclick="fillOpenText(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-2 py-0.5 rounded text-[11px] font-black">⚡ 填入「開」</button>
+                  <label class="text-xs font-bold text-slate-700">數量</label>
+                  <button type="button" onclick="fillOpenText(${index})" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded text-[11px] font-black">⚡填入「開」</button>
                 </div>
-                <input
-                  type="text"
-                  id="qtyInput-${index}"
-                  value="${escapeHtml(batch.qty)}"
-                  oninput="onBatchQtyInput(${index}, this.value)"
-                  placeholder="輸入數量或「開」"
-                  class="w-full px-3 py-2.5 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black"
-                />
-                <div id="qtyHint-${index}" class="mt-1 text-[11px] ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}">
-                  ${isQtyText ? '⚠️ 文字「' + escapeHtml(batch.qty) + '」不納入數字總量加總' : '純數字將自動納入總量'}
+                <div class="relative flex items-center">
+                  <input
+                    type="text"
+                    id="qtyInput-${index}"
+                    value="${escapeHtml(batch.qty)}"
+                    oninput="onBatchQtyInput(${index}, this.value)"
+                    placeholder="手打或點🎤"
+                    class="w-full pl-2.5 pr-10 py-2 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black"
+                  />
+                  <button
+                    type="button"
+                    id="qtyVoiceBtn-${index}"
+                    onclick="toggleFieldVoice('QTY', ${index})"
+                    title="語音念單一數字輸入數量"
+                    class="absolute right-1 w-8 h-8 rounded-lg bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 text-emerald-900 border border-emerald-300 text-xs font-black flex items-center justify-center transition"
+                  >🎤</button>
+                </div>
+                <div id="qtyHint-${index}" class="mt-1 text-[10px] leading-tight ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}">
+                  ${isQtyText ? '⚠️「' + escapeHtml(batch.qty) + '」不納入總量' : '點🎤念單字(如:二五八)'}
                 </div>
               </div>
 
-              <div class="col-span-5">
+              <!-- 右欄：效期 4碼 (支援手打、內嵌🎤念單一數字) -->
+              <div>
                 <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-slate-700">效期 <span class="text-[11px] font-normal text-slate-500">(4碼)</span></label>
+                  <label class="text-xs font-bold text-slate-700">效期 <span class="text-[10px] font-normal text-slate-500">(4碼)</span></label>
                   <span class="text-[10px] font-mono text-slate-400">YYMM</span>
                 </div>
-                <input
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="4"
-                  id="expiryInput-${index}"
-                  value="${escapeHtml(batch.expiry)}"
-                  oninput="onBatchExpiryInput(${index}, this.value)"
-                  placeholder="如 2612"
-                  class="w-full px-3 py-2.5 bg-white border-2 border-slate-300 focus:border-indigo-600 rounded-xl text-base font-mono font-black text-indigo-900 tracking-wider text-center"
-                />
-                <div class="mt-1 text-[11px] text-slate-400 text-center">原樣保留如 2612</div>
+                <div class="relative flex items-center">
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="4"
+                    id="expiryInput-${index}"
+                    value="${escapeHtml(batch.expiry)}"
+                    oninput="onBatchExpiryInput(${index}, this.value)"
+                    placeholder="如 2804"
+                    class="w-full pl-2.5 pr-10 py-2 bg-white border-2 border-slate-300 focus:border-indigo-600 rounded-xl text-base font-mono font-black text-indigo-900 tracking-wider text-center"
+                  />
+                  <button
+                    type="button"
+                    id="expVoiceBtn-${index}"
+                    onclick="toggleFieldVoice('EXPIRY', ${index})"
+                    title="語音念4碼單一數字輸入效期"
+                    class="absolute right-1 w-8 h-8 rounded-lg bg-indigo-100 hover:bg-indigo-200 active:bg-indigo-300 text-indigo-900 border border-indigo-300 text-xs font-black flex items-center justify-center transition"
+                  >🎤</button>
+                </div>
+                <div class="mt-1 text-[10px] leading-tight text-slate-400 text-center">點🎤念4碼(如:二八零四)</div>
               </div>
             </div>
           </div>
@@ -1086,7 +1330,7 @@
 
       const historyList = (rec && Array.isArray(rec.history)) ? rec.history : [];
       const historyHtml = historyList.length > 0 ? `
-        <details class="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs">
+        <details class="mt-2.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs">
           <summary class="font-bold text-slate-700 cursor-pointer select-none">🕒 查看歷次盤點與修改紀錄（共 ${historyList.length} 次紀錄）</summary>
           <div class="mt-2 space-y-1.5 divide-y divide-slate-200">
             ${historyList.slice().reverse().map(h => {
@@ -1108,46 +1352,48 @@
       ` : "";
 
       container.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-md border-2 border-slate-200 p-3.5">
-          <div class="flex flex-wrap items-start justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
+        <div class="bg-white rounded-2xl shadow-md border-2 border-slate-200 p-3">
+          <div class="flex flex-wrap items-start justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-200">
             <div class="flex items-center gap-2">
               <span class="bg-slate-900 text-amber-300 font-mono font-black text-base px-2.5 py-0.5 rounded-lg">${escapeHtml(drug.code)}</span>
-              <h2 class="text-xl font-black text-slate-900">${escapeHtml(drug.name)}</h2>
+              <h2 class="text-lg sm:text-xl font-black text-slate-900">${escapeHtml(drug.name)}</h2>
             </div>
-            <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right">
-              <div class="text-[11px] font-bold text-emerald-800">單品數字總量 (排除「開」)</div>
-              <div class="flex items-baseline justify-end gap-2">
-                <span id="liveTotalNumericDisplay" class="text-2xl font-black text-emerald-700">${liveStats.totalNumeric}</span>
-                <span id="liveFloorBreakdownDisplay" class="text-xs font-bold text-slate-600">(1樓: ${liveStats.floor1Numeric} / 3樓: ${liveStats.floor3Numeric})</span>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-2.5 py-1 text-right">
+              <div class="text-[10px] font-bold text-emerald-800">單品數字總量 (排除「開」)</div>
+              <div class="flex items-baseline justify-end gap-1.5">
+                <span id="liveTotalNumericDisplay" class="text-xl font-black text-emerald-700">${liveStats.totalNumeric}</span>
+                <span id="liveFloorBreakdownDisplay" class="text-[11px] font-bold text-slate-600">(1樓:${liveStats.floor1Numeric}/3樓:${liveStats.floor3Numeric})</span>
               </div>
-              <div id="liveTextNoteDisplay" class="text-[11px] text-amber-700 font-bold ${liveStats.textNotes.length ? '' : 'hidden'}">
-                另含文字批次：${escapeHtml(liveStats.textNotes.join("、"))}
+              <div id="liveTextNoteDisplay" class="text-[10px] text-amber-700 font-bold ${liveStats.textNotes.length ? '' : 'hidden'}">
+                另含：${escapeHtml(liveStats.textNotes.join("、"))}
               </div>
             </div>
           </div>
 
           ${siblingSwitchBar}
           ${previousReviewBanner}
-          <div class="space-y-2.5" id="batchRowsContainer">${batchRowsHtml}</div>
+          <div class="space-y-2" id="batchRowsContainer">${batchRowsHtml}</div>
 
-          <div class="mt-3">
-            <button type="button" onclick="addBatchRow()" class="w-full py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-700 font-bold text-xs bg-slate-50">
+          <div class="mt-2.5">
+            <button type="button" onclick="addBatchRow()" class="w-full py-2 px-3 rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-700 font-bold text-xs bg-slate-50">
               ＋ 新增另一組效期 / 樓層批次（預設帶入 <strong class="text-slate-900">${escapeHtml(appState.defaultFloor)}</strong>）
             </button>
           </div>
 
-          <div class="mt-3 pt-3 border-t border-slate-200">
-            <button type="button" onclick="saveCurrentDrugInventory()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-base transition">
+          <div class="mt-2.5 pt-2.5 border-t border-slate-200">
+            <button type="button" onclick="saveCurrentDrugInventory()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black py-3 px-4 rounded-xl shadow-md text-base transition">
               💾 儲存「${escapeHtml(drug.name)} (${escapeHtml(drug.code)})」盤點資料
             </button>
           </div>
           ${historyHtml}
         </div>
       `;
+
+      refreshFieldMicButtonsUI();
     }
 
     // =========================================================================
-    // 7. 批次欄位互動與儲存（絕不中斷常駐語音連線、絕不重整網頁）
+    // 7. 批次欄位互動與儲存
     // =========================================================================
     function updateBatchFloor(index, floor) {
       if (!editingBatches[index]) return;
@@ -1162,15 +1408,21 @@
       const inputEl = document.getElementById(`qtyInput-${index}`);
       const hintEl = document.getElementById(`qtyHint-${index}`);
       if (inputEl && hintEl) {
-        inputEl.className = `w-full px-3 py-2.5 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black`;
-        hintEl.className = `mt-1 text-[11px] ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}`;
-        hintEl.textContent = isQtyText ? `⚠️ 文字「${val.trim()}」不納入數字總量加總` : "純數字將自動納入總量";
+        inputEl.className = `w-full pl-2.5 pr-10 py-2 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black`;
+        hintEl.className = `mt-1 text-[10px] leading-tight ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}`;
+        hintEl.textContent = isQtyText ? `⚠️「${val.trim()}」不納入總量` : "點🎤念單字(如:二五八)";
       }
       refreshLiveTotalsBanner();
     }
 
     function fillOpenText(index) {
       if (!editingBatches[index]) return;
+      // 若正在對數量收音，自動關閉數量收音
+      if (isListeningWindowOpen && voiceTarget.mode === "QTY" && voiceTarget.batchIndex === index) {
+        isListeningWindowOpen = false;
+        consumedRawTranscript = fullRawTranscript;
+        updateVoiceControlUI("IDLE", "已填入「開」（可點右側效期格內的 🎤 念4碼效期）");
+      }
       editingBatches[index].qty = "開";
       renderActiveDrugCard(currentSelectedId);
       setTimeout(() => {
@@ -1191,11 +1443,11 @@
       const floorEl = document.getElementById("liveFloorBreakdownDisplay");
       const noteEl = document.getElementById("liveTextNoteDisplay");
       if (totalEl) totalEl.textContent = liveStats.totalNumeric;
-      if (floorEl) floorEl.textContent = `(1樓: ${liveStats.floor1Numeric} / 3樓: ${liveStats.floor3Numeric})`;
+      if (floorEl) floorEl.textContent = `(1樓:${liveStats.floor1Numeric}/3樓:${liveStats.floor3Numeric})`;
       if (noteEl) {
         if (liveStats.textNotes.length > 0) {
           noteEl.classList.remove("hidden");
-          noteEl.textContent = `另含文字批次：${liveStats.textNotes.join("、")}`;
+          noteEl.textContent = `另含：${liveStats.textNotes.join("、")}`;
         } else {
           noteEl.classList.add("hidden");
         }
@@ -1203,21 +1455,22 @@
     }
 
     function addBatchRow() {
+      isListeningWindowOpen = false;
+      consumedRawTranscript = fullRawTranscript;
       editingBatches.push({ floor: appState.defaultFloor, qty: "", expiry: "" });
       renderActiveDrugCard(currentSelectedId);
-      setTimeout(() => {
-        const qtyEl = document.getElementById(`qtyInput-${editingBatches.length - 1}`);
-        if (qtyEl) qtyEl.focus();
-      }, 40);
     }
 
     function removeBatchRow(index) {
       if (editingBatches.length <= 1) return;
+      isListeningWindowOpen = false;
+      consumedRawTranscript = fullRawTranscript;
       editingBatches.splice(index, 1);
       renderActiveDrugCard(currentSelectedId);
     }
 
     function saveCurrentDrugInventory() {
+      checkAndAutoSyncRealDate();
       const drug = appState.drugs.find(d => d.id === currentSelectedId);
       if (!drug) return;
 
@@ -1235,7 +1488,7 @@
       }
 
       const non4Digit = validBatches.find(b => b.expiry !== "" && !/^\d{4}$/.test(b.expiry));
-      if (non4Digit && !confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2705），確定要原樣儲存嗎？`)) {
+      if (non4Digit && !confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2804），確定要原樣儲存嗎？`)) {
         return;
       }
 
@@ -1259,9 +1512,14 @@
       editingBatches = validBatches.map(b => ({ ...b }));
       saveState();
 
-      // 儲存時將語音設為軟體靜音待命（保持底層麥克風連線不斷開！）
+      // 儲存時將語音重設回軟體靜音待命（保持底層麥克風連線不斷開！）
+      clearTimeout(autoLockTimer);
+      clearTimeout(quickStopTimer);
       isListeningWindowOpen = false;
-      consumedCleanTranscript = fullCleanTranscript;
+      voiceTarget = { mode: "DRUG", batchIndex: null };
+      consumedRawTranscript = fullRawTranscript;
+      currentSessionDeltaRaw = "";
+      updateVoiceControlUI("IDLE", `✅ 已儲存 ${drug.code}！請點「🎤 開始語音搜藥」盤點下一筆`);
 
       renderQuickDrugPills();
       renderActiveDrugCard(drug.id);
@@ -1271,7 +1529,6 @@
       showToast(`✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}`);
 
       document.getElementById("searchInput").value = "";
-      currentDrugQueryBuffer = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
       document.getElementById("searchResultsDropdown").classList.add("hidden");
     }
@@ -1480,6 +1737,8 @@
           if (parsed && Array.isArray(parsed.drugs)) {
             appState = parsed;
             appState.drugs = normalizeDrugList(parsed.drugs);
+            // 還原備份時同樣自動對齊今日實際日期
+            appState.workingDate = getTodayDateString();
             saveState();
             initApp();
             showToast("✅ 已成功還原 JSON 備份資料！");
