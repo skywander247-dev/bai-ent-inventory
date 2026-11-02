@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="白耳盤點系統" />
-  <title>白耳鼻喉科｜行動藥品盤點系統 v5.1</title>
+  <title>白耳鼻喉科｜行動藥品盤點系統 v5.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -40,7 +40,7 @@
         <div class="flex items-center gap-1.5">
           <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider">ENT</span>
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
-          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v5.1</span>
+          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v5.2</span>
         </div>
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
@@ -82,7 +82,7 @@
           <label for="searchInput" class="text-xs font-bold text-slate-600 flex items-center gap-1">
             <span>🔍 輸入或語音說出眼前藥品代碼／藥品名稱</span>
           </label>
-          <span id="drugCountBadge" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">內建 141 品項</span>
+          <span id="drugCountBadge" class="text-[11px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">內建 141 品項(含單位/月耗)</span>
         </div>
 
         <div class="relative flex items-center">
@@ -131,7 +131,7 @@
         <div id="voiceStatusBar" class="mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-1.5">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v5.1 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v5.2 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
           </div>
         </div>
 
@@ -209,9 +209,9 @@
       </div>
 
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <h2 class="text-base font-bold text-slate-800">📂 藥品清單主檔管理（支援 4 欄位：含單位與月消耗量）</h2>
+        <h2 class="text-base font-bold text-slate-800">📂 藥品清單主檔管理（已直接內建 141 筆 4 欄位完整數據）</h2>
         <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-          支援匯入包含「<strong>藥品代碼</strong>」、「<strong>藥品名稱</strong>」、「<strong>盤點的數量計算單位</strong>」、「<strong>藥品的月消耗量數據</strong>」4 個欄位的 Excel 檔。匯入後會自動更新各藥品的單位與月消耗量，<strong>且您手機內既有的盤點紀錄會 100% 完整保留！</strong>
+          系統已直接內建您提供的 141 筆「<strong>藥品代碼</strong>」、「<strong>藥品名稱</strong>」、「<strong>盤點的數量計算單位</strong>」與「<strong>藥品的月消耗量</strong>」完整資料。日後若有異動，亦可隨時上傳 Excel 覆蓋更新（既有盤點紀錄 100% 保留）。
         </p>
         <div class="mt-3 flex flex-col gap-2">
           <label class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-center text-xs cursor-pointer transition shadow">
@@ -220,10 +220,10 @@
           </label>
           <div class="grid grid-cols-2 gap-2">
             <button type="button" onclick="download4ColumnMasterTemplate()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold py-2.5 px-3 rounded-xl text-xs transition">
-              📄 下載 141 筆 4欄位範本
+              📄 匯出目前 141 筆 4欄位主檔
             </button>
             <button type="button" onclick="restoreBuiltin141Drugs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs transition">
-              🔄 還原內建 141 筆主檔
+              🔄 還原內建 141 筆 4欄位主檔
             </button>
           </div>
         </div>
@@ -242,7 +242,7 @@
         </div>
         <div class="pt-2 border-t border-slate-100">
           <button type="button" onclick="clearAllInventoryData()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-3 rounded-xl text-xs">
-            🗑️ 清空所有已輸入的盤點紀錄（保留藥品主檔）
+            🗑️ 清空所有已輸入的盤點紀錄（保留 141 筆 4 欄位藥品主檔）
           </button>
         </div>
       </div>
@@ -267,84 +267,150 @@
 
   <script>
     // =========================================================================
-    // 1. 白耳鼻喉科 141 筆完整內建藥品清單（支援擴充 unit 與 monthlyUsage）
+    // 1. 白耳鼻喉科 141 筆完整內建 4 欄位藥品基本檔（含單位與月消耗量寫死內建）
     // =========================================================================
     const RAW_BUILTIN_DRUGS = [
-      { code: "TAMI", name: "易剋冒(公費)" }, { code: "TAMIO", name: "易剋冒(自費)" },
-      { code: "REL", name: "瑞樂沙(公費)" }, { code: "XOF", name: "紓伏效(自費)" },
-      { code: "ACY", name: "敵疱治" }, { code: "AM2", name: "安蒙西林250" },
-      { code: "AM5", name: "安蒙西林500" }, { code: "AU1", name: "諾快寧1000" },
-      { code: "AU6", name: "必百欣625" }, { code: "AU6", name: "諾快寧625" },
-      { code: "COM", name: "康保西林" }, { code: "BAK", name: "碩邁沛霖" },
-      { code: "DOX", name: "溫達黴素" }, { code: "CLA", name: "特立適" },
-      { code: "ZITO", name: "日舒" }, { code: "ZIT", name: "侒舒芯亞" },
-      { code: "KEF", name: "賜福力欣" }, { code: "CEF2", name: "賜福" },
-      { code: "CEF3", name: "賜信" }, { code: "NYS", name: "寧司泰定" },
-      { code: "CRA", name: "佐淨菌500" }, { code: "CRA", name: "樂伏菌500" },
-      { code: "CRA1", name: "雷弗欣100" }, { code: "OF1", name: "欣福100" },
-      { code: "OF2", name: "欣福200" }, { code: "MEBE", name: "疳福錠" },
-      { code: "FLU", name: "喜滅痛錠" }, { code: "FLU", name: "福康" },
-      { code: "IBU", name: "抑痛甜(橘)" }, { code: "IBU", name: "痛能(粉)" },
-      { code: "NAP", name: "拿撲僂炎" }, { code: "PON", name: "消濕痛" },
-      { code: "VOR2", name: "得克芬" }, { code: "VOR5", name: "克炎平" },
-      { code: "ACEW", name: "必安痛" }, { code: "ACEY", name: "安離痛" },
-      { code: "ACES", name: "可制痛" }, { code: "ACEC", name: "安離痛加強錠" },
-      { code: "ERG", name: "治偏頭痛" }, { code: "BRO", name: "勿炎" },
-      { code: "BRO", name: "撲炎喜" }, { code: "LYS", name: "來縮酵素" },
-      { code: "LYS", name: "縮酶" }, { code: "PRE", name: "保您免痛" },
-      { code: "PRE", name: "保樂爽" }, { code: "BET", name: "倍他沒酸" },
-      { code: "ALE", name: "飛敏耐" }, { code: "ALEO", name: "飛敏耐(排)" },
-      { code: "LOR", name: "柔他定" }, { code: "BILAO", name: "倍抗敏" },
-      { code: "CETO", name: "服敏" }, { code: "XYZO", name: "驅異樂(排)" },
-      { code: "BUC", name: "布克珍" }, { code: "POL", name: "特息敏" },
-      { code: "MEQ", name: "舒敏錠" }, { code: "MEE", name: "鹽酸消旋甲基麻黃" },
-      { code: "LON", name: "過敏寧(排)" }, { code: "NORS", name: "鼻爽" },
-      { code: "NORS", name: "鼻息敏" }, { code: "ASV", name: "咳舒" },
-      { code: "BEN", name: "諾咳" }, { code: "BES", name: "咳治得100" },
-      { code: "BES2", name: "剎咳得200" }, { code: "COD5", name: "可嗽平" },
-      { code: "COD6", name: "舒寧" }, { code: "MEDA", name: "嗽尚寧" },
-      { code: "NOS", name: "甜嗽" }, { code: "NOS", name: "抗咳" },
-      { code: "OXO", name: "安咳" }, { code: "RES2", name: "抑咳" },
-      { code: "RES3", name: "益咳靜" }, { code: "RES5", name: "立舒咳" },
-      { code: "EUF", name: "優咳" }, { code: "BIS", name: "定舒咳" },
-      { code: "BIS", name: "普拿咳" }, { code: "AMB", name: "平痰息" },
-      { code: "AMB", name: "安舒錠" }, { code: "CAR", name: "甜痰舒" },
-      { code: "CAR", name: "祛痰平" }, { code: "ACTL", name: "速痰(包)" },
-      { code: "ACTL", name: "牧舒爾(橘)" }, { code: "ACTS1", name: "牧舒爾(藍)" },
-      { code: "ACTO", name: "愛克痰(發泡錠)" }, { code: "BER", name: "菲諾特洛" },
-      { code: "DIP", name: "二羥丙基茶鹼" }, { code: "MEP", name: "麥咳喘" },
-      { code: "THO", name: "喘克" }, { code: "THO", name: "布隆可林" },
-      { code: "THO", name: "氨基非林" }, { code: "SIN4", name: "萬剋喘" },
-      { code: "SIN4", name: "欣流" }, { code: "SIN5", name: "欣流" },
-      { code: "SIN10", name: "息喘" }, { code: "DUC", name: "秘瀉樂" },
-      { code: "MGO", name: "氧化鎂" }, { code: "SEN", name: "快便" },
-      { code: "SEN", name: "秘通樂" }, { code: "BUS", name: "鎮痙適" },
-      { code: "MOP", name: "胃默適" }, { code: "MOT", name: "道喜" },
-      { code: "MOT", name: "鎮吐寧" }, { code: "IMO", name: "樂止" },
-      { code: "KBT", name: "克瀉寧" }, { code: "STR", name: "芬康胃" },
-      { code: "MYL", name: "泰胃" }, { code: "BIO", name: "乳樂明" },
-      { code: "GAS", name: "瓦斯敏" }, { code: "FAM", name: "法瑪鎮" },
-      { code: "CIM", name: "恩胃" }, { code: "CIM", name: "好胃明" },
-      { code: "TAK", name: "逸潰定" }, { code: "PANO", name: "瘍康" },
-      { code: "BCO", name: "維生素B群" }, { code: "MEC", name: "暈素寧" },
-      { code: "MEC", name: "美克旅鎮" }, { code: "CEP", name: "振暈" },
-      { code: "CEP", name: "世華妥" }, { code: "EUC", name: "暢力" },
-      { code: "HEM", name: "旺血" }, { code: "MER", name: "可克暈" },
-      { code: "SIB", name: "福腦淨" }, { code: "TRA", name: "血必克" },
-      { code: "HPS", name: "肌背舒" }, { code: "SOL", name: "舒可樂" },
-      { code: "SOMA", name: "舒肌痛" }, { code: "XAN", name: "安柏寧" },
-      { code: "CLON", name: "可那平" }, { code: "ZOLO", name: "柔拍" },
-      { code: "TRAMA", name: "服安痛" }, { code: "ECOV", name: "易樂潔" },
-      { code: "MOTA", name: "冬培力" }, { code: "VORA", name: "非炎" },
-      { code: "17", name: "Erythromycin 250mg/cap" },
-      { code: "22", name: "Hexoline 0.5mg/tab" },
-      { code: "25", name: "Mebhydroline 50mg/tab" },
-      { code: "27", name: "Nifuroxamide 200mg/cap" },
-      { code: "30", name: "Cyproheptadine 4mg/tab" },
-      { code: "29", name: "Pipoxolan 10mg/tab" },
-      { code: "36", name: "Clindamycin 150mg/cap" },
-      { code: "38", name: "Mefenamic acid 500mg/tab" },
-      { code: "VALD", name: "煩多閃25mg" }
+      { code: "TAMI", name: "易剋冒(公費)", unit: "顆", monthlyUsage: null },
+      { code: "TAMIO", name: "易剋冒(自費)", unit: "顆", monthlyUsage: null },
+      { code: "REL", name: "瑞樂沙(公費)", unit: "顆", monthlyUsage: null },
+      { code: "XOF", name: "紓伏效(自費)", unit: "顆", monthlyUsage: null },
+      { code: "ACY", name: "敵疱治", unit: "瓶", monthlyUsage: 1.2 },
+      { code: "AM2", name: "安蒙西林250", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "AM5", name: "安蒙西林500", unit: "瓶", monthlyUsage: 1.9 },
+      { code: "AU1", name: "諾快寧1000", unit: "盒", monthlyUsage: 73.8 },
+      { code: "AU6", name: "必百欣625", unit: "盒", monthlyUsage: 10.1 },
+      { code: "AU6", name: "諾快寧625", unit: "盒", monthlyUsage: 12.1 },
+      { code: "COM", name: "康保西林", unit: "瓶", monthlyUsage: 1.3 },
+      { code: "BAK", name: "碩邁沛霖", unit: "瓶", monthlyUsage: 0.3 },
+      { code: "DOX", name: "溫達黴素", unit: "瓶", monthlyUsage: null },
+      { code: "CLA", name: "特立適", unit: "瓶", monthlyUsage: 1.6 },
+      { code: "ZITO", name: "日舒", unit: "瓶", monthlyUsage: 1.7 },
+      { code: "ZIT", name: "侒舒芯亞", unit: "瓶", monthlyUsage: 7.4 },
+      { code: "KEF", name: "賜福力欣", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "CEF2", name: "賜福", unit: "瓶", monthlyUsage: 4.7 },
+      { code: "CEF3", name: "賜信", unit: "瓶", monthlyUsage: 2.5 },
+      { code: "NYS", name: "寧司泰定", unit: "瓶", monthlyUsage: null },
+      { code: "CRA", name: "佐淨菌500", unit: "盒", monthlyUsage: 14 },
+      { code: "CRA", name: "樂伏菌500", unit: "盒", monthlyUsage: 46.8 },
+      { code: "CRA1", name: "雷弗欣100", unit: "瓶", monthlyUsage: 2.3 },
+      { code: "OF1", name: "欣福100", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "OF2", name: "欣福200", unit: "瓶", monthlyUsage: 0.5 },
+      { code: "MEBE", name: "疳福錠", unit: "顆", monthlyUsage: 0.01 },
+      { code: "FLU", name: "喜滅痛錠", unit: "瓶", monthlyUsage: null },
+      { code: "FLU", name: "福康", unit: "瓶", monthlyUsage: null },
+      { code: "IBU", name: "抑痛甜(橘)", unit: "瓶", monthlyUsage: 5.8 },
+      { code: "IBU", name: "痛能(粉)", unit: "瓶", monthlyUsage: 5.8 },
+      { code: "NAP", name: "拿撲僂炎", unit: "瓶", monthlyUsage: 1 },
+      { code: "PON", name: "消濕痛", unit: "瓶", monthlyUsage: 6.4 },
+      { code: "VOR2", name: "得克芬", unit: "瓶", monthlyUsage: 6.6 },
+      { code: "VOR5", name: "克炎平", unit: "瓶", monthlyUsage: 7.2 },
+      { code: "ACEW", name: "必安痛", unit: "瓶", monthlyUsage: 10 },
+      { code: "ACEY", name: "安離痛", unit: "瓶", monthlyUsage: 4.8 },
+      { code: "ACES", name: "可制痛", unit: "瓶", monthlyUsage: 3.2 },
+      { code: "ACEC", name: "安離痛加強錠", unit: "瓶", monthlyUsage: 0.4 },
+      { code: "ERG", name: "治偏頭痛", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "BRO", name: "勿炎", unit: "瓶", monthlyUsage: 10.6 },
+      { code: "BRO", name: "撲炎喜", unit: "瓶", monthlyUsage: 10.6 },
+      { code: "LYS", name: "來縮酵素", unit: "瓶", monthlyUsage: 0.6 },
+      { code: "LYS", name: "縮酶", unit: "瓶", monthlyUsage: 0.6 },
+      { code: "PRE", name: "保您免痛", unit: "瓶", monthlyUsage: 3.8 },
+      { code: "PRE", name: "保樂爽", unit: "瓶", monthlyUsage: null },
+      { code: "BET", name: "倍他沒酸", unit: "瓶", monthlyUsage: 2.8 },
+      { code: "ALE", name: "飛敏耐", unit: "瓶", monthlyUsage: 11.9 },
+      { code: "ALEO", name: "飛敏耐(排)", unit: "顆", monthlyUsage: 400 },
+      { code: "LOR", name: "柔他定", unit: "瓶", monthlyUsage: 6.3 },
+      { code: "BILAO", name: "倍抗敏", unit: "盒", monthlyUsage: 1.7 },
+      { code: "CETO", name: "服敏", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "XYZO", name: "驅異樂(排)", unit: "盒", monthlyUsage: 10.3 },
+      { code: "BUC", name: "布克珍", unit: "瓶", monthlyUsage: 0.4 },
+      { code: "POL", name: "特息敏", unit: "瓶", monthlyUsage: 10.5 },
+      { code: "MEQ", name: "舒敏錠", unit: "瓶", monthlyUsage: 1.9 },
+      { code: "MEE", name: "鹽酸消旋甲基麻黃", unit: "瓶", monthlyUsage: 10.5 },
+      { code: "LON", name: "過敏寧(排)", unit: "盒", monthlyUsage: 3.2 },
+      { code: "NORS", name: "鼻爽", unit: "瓶", monthlyUsage: 2.1 },
+      { code: "NORS", name: "鼻息敏", unit: "瓶", monthlyUsage: null },
+      { code: "ASV", name: "咳舒", unit: "瓶", monthlyUsage: 0.3 },
+      { code: "BEN", name: "諾咳", unit: "瓶", monthlyUsage: 9.9 },
+      { code: "BES", name: "咳治得100", unit: "瓶", monthlyUsage: null },
+      { code: "BES2", name: "剎咳得200", unit: "瓶", monthlyUsage: null },
+      { code: "COD5", name: "可嗽平", unit: "瓶", monthlyUsage: 3.9 },
+      { code: "COD6", name: "舒寧", unit: "瓶", monthlyUsage: 2.9 },
+      { code: "MEDA", name: "嗽尚寧", unit: "瓶", monthlyUsage: 5.5 },
+      { code: "NOS", name: "甜嗽", unit: "瓶", monthlyUsage: 8.1 },
+      { code: "NOS", name: "抗咳", unit: "瓶", monthlyUsage: 8.1 },
+      { code: "OXO", name: "安咳", unit: "瓶", monthlyUsage: 0.3 },
+      { code: "RES2", name: "抑咳", unit: "瓶", monthlyUsage: 0.4 },
+      { code: "RES3", name: "益咳靜", unit: "瓶", monthlyUsage: 3.9 },
+      { code: "RES5", name: "立舒咳", unit: "瓶", monthlyUsage: 3.2 },
+      { code: "EUF", name: "優咳", unit: "瓶", monthlyUsage: 0.4 },
+      { code: "BIS", name: "定舒咳", unit: "瓶", monthlyUsage: 6.6 },
+      { code: "BIS", name: "普拿咳", unit: "瓶", monthlyUsage: 6.6 },
+      { code: "AMB", name: "平痰息", unit: "瓶", monthlyUsage: 6.1 },
+      { code: "AMB", name: "安舒錠", unit: "瓶", monthlyUsage: 6.1 },
+      { code: "CAR", name: "甜痰舒", unit: "瓶", monthlyUsage: 2 },
+      { code: "CAR", name: "祛痰平", unit: "瓶", monthlyUsage: 2 },
+      { code: "ACTL", name: "速痰(包)", unit: "盒", monthlyUsage: 5.9 },
+      { code: "ACTL", name: "牧舒爾(橘)", unit: "盒", monthlyUsage: 5.9 },
+      { code: "ACTS1", name: "牧舒爾(藍)", unit: "盒", monthlyUsage: 2.9 },
+      { code: "ACTO", name: "愛克痰(發泡錠)", unit: "盒", monthlyUsage: 1.4 },
+      { code: "BER", name: "菲諾特洛", unit: "瓶", monthlyUsage: 3.4 },
+      { code: "DIP", name: "二羥丙基茶鹼", unit: "瓶", monthlyUsage: 5.9 },
+      { code: "MEP", name: "麥咳喘", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "THO", name: "喘克", unit: "瓶", monthlyUsage: 1.8 },
+      { code: "THO", name: "布隆可林", unit: "瓶", monthlyUsage: null },
+      { code: "THO", name: "氨基非林", unit: "瓶", monthlyUsage: null },
+      { code: "SIN4", name: "萬剋喘", unit: "盒", monthlyUsage: 0.2 },
+      { code: "SIN4", name: "欣流", unit: "盒", monthlyUsage: 0.2 },
+      { code: "SIN5", name: "欣流", unit: "盒", monthlyUsage: 1.8 },
+      { code: "SIN10", name: "息喘", unit: "盒", monthlyUsage: 9.5 },
+      { code: "DUC", name: "秘瀉樂", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "MGO", name: "氧化鎂", unit: "瓶", monthlyUsage: 0.6 },
+      { code: "SEN", name: "快便", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "SEN", name: "秘通樂", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "BUS", name: "鎮痙適", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "MOP", name: "胃默適", unit: "瓶", monthlyUsage: 0.6 },
+      { code: "MOT", name: "道喜", unit: "瓶", monthlyUsage: 2.9 },
+      { code: "MOT", name: "鎮吐寧", unit: "瓶", monthlyUsage: 2.9 },
+      { code: "IMO", name: "樂止", unit: "瓶", monthlyUsage: 0.9 },
+      { code: "KBT", name: "克瀉寧", unit: "瓶", monthlyUsage: 1.2 },
+      { code: "STR", name: "芬康胃", unit: "瓶", monthlyUsage: 17.2 },
+      { code: "MYL", name: "泰胃", unit: "瓶", monthlyUsage: 0.9 },
+      { code: "BIO", name: "乳樂明", unit: "瓶", monthlyUsage: 1.5 },
+      { code: "GAS", name: "瓦斯敏", unit: "瓶", monthlyUsage: 1.8 },
+      { code: "FAM", name: "法瑪鎮", unit: "瓶", monthlyUsage: 9.6 },
+      { code: "CIM", name: "恩胃", unit: "瓶", monthlyUsage: 5.4 },
+      { code: "CIM", name: "好胃明", unit: "瓶", monthlyUsage: 5.4 },
+      { code: "TAK", name: "逸潰定", unit: "盒", monthlyUsage: 0.4 },
+      { code: "PANO", name: "瘍康", unit: "盒", monthlyUsage: 0.01 },
+      { code: "BCO", name: "維生素B群", unit: "瓶", monthlyUsage: 1 },
+      { code: "MEC", name: "暈素寧", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "MEC", name: "美克旅鎮", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "CEP", name: "振暈", unit: "瓶", monthlyUsage: 0.4 },
+      { code: "CEP", name: "世華妥", unit: "瓶", monthlyUsage: 0.4 },
+      { code: "EUC", name: "暢力", unit: "瓶", monthlyUsage: 1.1 },
+      { code: "HEM", name: "旺血", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "MER", name: "可克暈", unit: "瓶", monthlyUsage: 0.2 },
+      { code: "SIB", name: "福腦淨", unit: "瓶", monthlyUsage: 0.3 },
+      { code: "TRA", name: "血必克", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "HPS", name: "肌背舒", unit: "瓶", monthlyUsage: 0.2 },
+      { code: "SOL", name: "舒可樂", unit: "瓶", monthlyUsage: 0.5 },
+      { code: "SOMA", name: "舒肌痛", unit: "瓶", monthlyUsage: 0.8 },
+      { code: "XAN", name: "安柏寧", unit: "顆", monthlyUsage: 500 },
+      { code: "CLON", name: "可那平", unit: "顆", monthlyUsage: 300 },
+      { code: "ZOLO", name: "柔拍", unit: "顆", monthlyUsage: 400 },
+      { code: "TRAMA", name: "服安痛", unit: "顆", monthlyUsage: 168 },
+      { code: "ECOV", name: "易樂潔", unit: "顆", monthlyUsage: 0.01 },
+      { code: "MOTA", name: "冬培力", unit: "顆", monthlyUsage: 10 },
+      { code: "VORA", name: "非炎", unit: "顆", monthlyUsage: 10 },
+      { code: "17", name: "Erythromycin 250mg/cap", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "22", name: "Hexoline 0.5mg/tab", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "25", name: "Mebhydroline 50mg/tab", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "27", name: "Nifuroxamide 200mg/cap", unit: "瓶", monthlyUsage: 0.1 },
+      { code: "30", name: "Cyproheptadine 4mg/tab", unit: "瓶", monthlyUsage: 0.01 },
+      { code: "29", name: "Pipoxolan 10mg/tab", unit: "顆", monthlyUsage: 0.1 },
+      { code: "36", name: "Clindamycin 150mg/cap", unit: "瓶", monthlyUsage: 0.5 },
+      { code: "38", name: "Mefenamic acid 500mg/tab", unit: "瓶", monthlyUsage: 0.7 },
+      { code: "VALD", name: "煩多閃25mg", unit: "顆", monthlyUsage: 2.5 }
     ];
 
     function parseMonthlyUsageVal(val) {
@@ -368,6 +434,8 @@
     }
 
     const BUILTIN_DRUGS = normalizeDrugList(RAW_BUILTIN_DRUGS);
+    const BUILTIN_DRUG_MAP = new Map(BUILTIN_DRUGS.map(d => [d.id, d]));
+
     // 嚴格鎖定 STORAGE_KEY，確保手機既有盤點資料 100% 保留
     const STORAGE_KEY = "bai_ent_inventory_v4_official_141";
 
@@ -415,7 +483,6 @@
     // 2. 近效期 (120天內) 推算與「屆效前30天能否使用完畢」核心精算引擎
     //    （數量為「開」等非數字批次：不納入庫存與耗用計算，僅單純提醒近效期）
     // =========================================================================
-    // 將 4 碼效期 (如 "2703", "2704", "2802") 轉換為當月最後一天 (自動處理平年28天/閏年29天)
     function parse4DigitExpiryToEndOfMonth(expStr) {
       const clean = String(expStr ?? "").trim();
       if (!/^\d{4}$/.test(clean)) return null;
@@ -487,10 +554,10 @@
         const daysToExp = item.daysToExpiry;
         const daysUntil30Before = daysToExp - 30;
         const isExpired = daysToExp < 0;
-        const isNearExpiry = daysToExp >= 0 && daysToExp <= 120; // 末效期往前推算 120 天內
+        const isNearExpiry = daysToExp >= 0 && daysToExp <= 120;
         const isAlert = isExpired || isNearExpiry;
 
-        // 【v5.1 核心規範】：若該批數量為「開」（或非數字文字），不納入庫存與耗用計算，僅單純提醒近效期或過期！
+        // 若該批數量為「開」（或非數字文字），不納入庫存與耗用計算，僅單純提醒近效期或過期
         if (!item.isNum) {
           let textPlain = "";
           let badgeHtml = "";
@@ -520,7 +587,7 @@
           };
         }
 
-        // 以下僅針對「純數字數量批次」計算同效期及更早效期之累計需耗用庫存（自動忽略所有「開」的批次）
+        // 純數字數量批次：計算同效期及更早效期之累計需耗用庫存（自動忽略所有「開」的批次）
         let cumulativeQtyToClear = 0;
         parsedMeta.forEach(other => {
           if (other.expInfo && other.isNum && other.expInfo.utcMs <= item.expInfo.utcMs) {
@@ -541,8 +608,8 @@
             depletionTextPlain = `🚨 已過效期 ${Math.abs(daysToExp)} 天（末效日 ${item.expInfo.dateStr}），請立即下架停用！`;
             depletionBadgeHtml = `<span class="text-rose-700 font-black">🚨 已過效期 (${Math.abs(daysToExp)}天前到期)，不可使用！</span>`;
           } else if (monthlyUsage === null) {
-            depletionTextPlain = `⚠️ 近效期（剩 ${daysToExp} 天，末效日 ${item.expInfo.dateStr}）｜尚未設定月消耗量`;
-            depletionBadgeHtml = `<span class="text-amber-700 font-bold">⚠️ 近效期（剩 ${daysToExp} 天）｜未設月消耗量（點上方「⚙️設定」可精算耗用）</span>`;
+            depletionTextPlain = `⚠️ 近效期（剩 ${daysToExp} 天，末效日 ${item.expInfo.dateStr}）｜此品項無月消耗量數據`;
+            depletionBadgeHtml = `<span class="text-amber-700 font-bold">⚠️ 近效期（剩 ${daysToExp} 天）｜此品項無月消耗量數據（點上方「⚙️設定」可手動填入）</span>`;
           } else if (monthlyUsage === 0) {
             canFinish30DaysBefore = cumulativeQtyToClear === 0;
             depletionTextPlain = `❌ 月消耗量為 0${unitStr}，無法於屆效前30天用畢（目前數字庫存 ${formatNumSmart(cumulativeQtyToClear)}${unitStr}）！`;
@@ -688,7 +755,7 @@
                 <span class="font-black text-sm text-slate-900">${escapeHtml(d.name)}</span>
               </div>
               <span class="text-[11px] font-bold text-slate-500">
-                ${hasNumericRisky ? (d.monthlyUsage !== null ? `月耗: ${d.monthlyUsage}${unitLabel}` : `未設月耗量`) : `僅提醒近效期`}
+                ${hasNumericRisky ? (d.monthlyUsage !== null ? `月耗: ${d.monthlyUsage}${unitLabel}` : `無月耗數據`) : `僅提醒近效期`}
               </span>
             </div>
             ${batchesHtml}
@@ -722,7 +789,7 @@
     }
 
     // =========================================================================
-    // 3. 初始化、資料持久化與「盤點日自動跟隨當日實際日期」機制
+    // 3. 初始化、資料持久化與「內建 4 欄位主檔自動同步合併」機制
     // =========================================================================
     function initApp() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -734,11 +801,27 @@
           const parsed = JSON.parse(saved);
           appState.workingDate = todayStr;
           appState.defaultFloor = parsed.defaultFloor === "3樓" ? "3樓" : "1樓";
-          appState.drugs = (Array.isArray(parsed.drugs) && parsed.drugs.length > 0)
-            ? normalizeDrugList(parsed.drugs)
-            : [...BUILTIN_DRUGS];
+
+          // 關鍵升級：讀取舊快取時，自動將 v5.2 內建的 141 筆「單位 (unit)」與「月消耗量 (monthlyUsage)」同步補齊！
+          if (Array.isArray(parsed.drugs) && parsed.drugs.length > 0) {
+            const normalizedSaved = normalizeDrugList(parsed.drugs);
+            appState.drugs = normalizedSaved.map(d => {
+              const builtin = BUILTIN_DRUG_MAP.get(d.id);
+              if (builtin) {
+                return {
+                  ...d,
+                  unit: d.unit ? d.unit : builtin.unit,
+                  monthlyUsage: d.monthlyUsage !== null ? d.monthlyUsage : builtin.monthlyUsage
+                };
+              }
+              return d;
+            });
+          } else {
+            appState.drugs = [...BUILTIN_DRUGS];
+          }
+
           appState.records = parsed.records || {};
-          appState.recentIds = Array.isArray(parsed.recentIds) ? parsed.recentIds : ["AM5__安蒙西林500", "COM__康保西林"];
+          appState.recentIds = Array.isArray(parsed.recentIds) ? parsed.recentIds : ["AM5__安蒙西林500", "COM__康保西林", "AU6__必百欣625", "AU6__諾快寧625"];
           if (parsed.lastSelectedId) {
             currentSelectedId = parsed.lastSelectedId;
           } else if (appState.recentIds[0]) {
@@ -785,7 +868,7 @@
       appState.lastSelectedId = currentSelectedId;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
       const badge = document.getElementById("drugCountBadge");
-      if (badge) badge.textContent = `內建 ${appState.drugs.length} 品項`;
+      if (badge) badge.textContent = `內建 ${appState.drugs.length} 品項(含單位/月耗)`;
     }
 
     function onWorkingDateChange() {
@@ -852,7 +935,7 @@
     }
 
     // =========================================================================
-    // 5. v5.1 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
+    // 5. v5.2 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
     // =========================================================================
     let sharedRecognition = null;
     let isHardwareMicStreamOpen = false;
@@ -1023,7 +1106,7 @@
         statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
         statusText.className = "font-bold text-slate-600 leading-snug";
-        statusText.textContent = message || "[v5.1 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
+        statusText.textContent = message || "[v5.2 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
       }
       refreshFieldMicButtonsUI();
     }
@@ -1342,7 +1425,7 @@
     // =========================================================================
     function renderQuickDrugPills() {
       const container = document.getElementById("quickDrugPills");
-      document.getElementById("drugCountBadge").textContent = `內建 ${appState.drugs.length} 品項`;
+      document.getElementById("drugCountBadge").textContent = `內建 ${appState.drugs.length} 品項(含單位/月耗)`;
 
       const pillDrugs = [];
       const seen = new Set();
@@ -1546,7 +1629,7 @@
       const usageInfo = hasNumericAlert
         ? (drug.monthlyUsage !== null
             ? `月消耗量：<strong>${drug.monthlyUsage}${unitLabel}/月</strong>`
-            : `<span class="underline">尚未設定月消耗量</span>`)
+            : `<span class="underline">此品項無月消耗量數據</span>`)
         : `<span>數量為「開」僅提醒近效期（不計入庫存）</span>`;
 
       const itemsHtml = alertBatches.map(ab => {
@@ -1642,7 +1725,6 @@
             expWarnTag = `<span class="bg-rose-600 text-white px-1 py-0.2 rounded text-[10px] font-black">🚨過期${Math.abs(pe.daysToExpiry)}天</span>`;
           } else if (pe.isNearExpiry) {
             if (pe.isTextQtyOnlyReminder) {
-              // 數量為「開」：僅單純提醒近效期
               expWarnTag = `<span class="bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded text-[10px] font-black">⚠️近效期(剩${pe.daysToExpiry}天)</span>`;
             } else {
               const finishIcon = pe.canFinish30DaysBefore === true ? "｜✅可耗完" : (pe.canFinish30DaysBefore === false ? "｜❌屆效前30天用不完" : "");
@@ -1807,12 +1889,12 @@
               <details class="mt-1.5 text-xs">
                 <summary class="cursor-pointer select-none inline-flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-lg">
                   <span>📦 單位：<strong class="text-slate-900">${escapeHtml(drug.unit || "未設定")}</strong></span>
-                  <span>｜📉 月消耗量：<strong class="text-indigo-700">${drug.monthlyUsage !== null ? `${drug.monthlyUsage} ${escapeHtml(drug.unit || '')}/月` : "未設定"}</strong></span>
+                  <span>｜📉 月消耗量：<strong class="text-indigo-700">${drug.monthlyUsage !== null ? `${drug.monthlyUsage} ${escapeHtml(drug.unit || '')}/月` : "未設定(原檔留白)"}</strong></span>
                   <span class="text-emerald-700 underline ml-0.5">⚙️設定</span>
                 </summary>
                 <div class="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5">
-                  <input type="text" id="inlineUnitInput" value="${escapeHtml(drug.unit || '')}" placeholder="單位(如:罐、顆)" class="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-bold" />
-                  <input type="number" step="any" id="inlineUsageInput" value="${drug.monthlyUsage !== null ? drug.monthlyUsage : ''}" placeholder="月消耗量(如:0.003)" class="w-32 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-bold" />
+                  <input type="text" id="inlineUnitInput" value="${escapeHtml(drug.unit || '')}" placeholder="單位(如:瓶、盒)" class="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-bold" />
+                  <input type="number" step="any" id="inlineUsageInput" value="${drug.monthlyUsage !== null ? drug.monthlyUsage : ''}" placeholder="月消耗量(如:1.9)" class="w-32 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-bold" />
                   <button type="button" onclick="saveCurrentDrugUnitAndUsage()" class="bg-slate-800 text-white px-2.5 py-1 rounded text-xs font-bold shrink-0">儲存設定</button>
                 </div>
               </details>
@@ -2043,7 +2125,7 @@
     }
 
     // =========================================================================
-    // 9. 盤點總覽、Excel 匯出與 4 欄位主檔匯入管理
+    // 9. 盤點總覽、Excel 匯出與智慧模糊欄位識別匯入管理
     // =========================================================================
     function setListFilter(filter) {
       currentListFilter = filter;
@@ -2197,7 +2279,7 @@
               "推算末效日": ev.expiryDateStr,
               "距末效日天數": ev.daysToExpiry !== null ? ev.daysToExpiry : "",
               "近效期狀態(120天內)": nearStatusStr,
-              "藥品的月消耗量數據": usageVal,
+              "藥品的月消耗量": usageVal,
               "屆效前30天能否使用完畢評估": evalSummaryForRow,
               "單品數字總量(排除文字)": stats.totalNumeric,
               "最後盤點日期": rec.lastUpdatedDate
@@ -2216,7 +2298,7 @@
                 "推算末效日": ev.expiryDateStr,
                 "距末效日天數": ev.daysToExpiry,
                 "距屆效前30天可用天數": ev.isTextQtyOnlyReminder ? "" : ev.daysUntil30Before,
-                "藥品的月消耗量數據": ev.isTextQtyOnlyReminder ? "" : usageVal,
+                "藥品的月消耗量": ev.isTextQtyOnlyReminder ? "" : usageVal,
                 "屆效前30天最大可消耗量": (!ev.isTextQtyOnlyReminder && ev.usableBefore30Days !== null) ? formatNumSmart(ev.usableBefore30Days) : "",
                 "同效期及更早累計需耗用量": (!ev.isTextQtyOnlyReminder && ev.cumulativeQtyToClear !== null) ? formatNumSmart(ev.cumulativeQtyToClear) : "",
                 "預計耗用完畢所需天數": (!ev.isTextQtyOnlyReminder && ev.daysNeededToClear !== null) ? ev.daysNeededToClear : "",
@@ -2234,7 +2316,7 @@
             "藥品代碼": d.code,
             "藥品名稱": d.name,
             "盤點的數量計算單位": unitStr,
-            "藥品的月消耗量數據": usageVal,
+            "藥品的月消耗量": usageVal,
             "1樓數字總量": stats.floor1Numeric,
             "3樓數字總量": stats.floor3Numeric,
             "單品數字總量(1樓+3樓)": stats.totalNumeric,
@@ -2269,7 +2351,7 @@
             "藥品代碼": d.code,
             "藥品名稱": d.name,
             "盤點的數量計算單位": unitStr,
-            "藥品的月消耗量數據": usageVal,
+            "藥品的月消耗量": usageVal,
             "1樓數字總量": "",
             "3樓數字總量": "",
             "單品數字總量(1樓+3樓)": "",
@@ -2297,6 +2379,25 @@
       }
     }
 
+    // 智慧模糊欄位識別：無論標題是「藥品的月消耗量」、「藥品的月消耗量數據」或「月消耗量」皆可 100% 讀取
+    function extractRowFieldByKeywords(row, exactKeys, fuzzyKeywords) {
+      for (const k of exactKeys) {
+        if (row[k] !== undefined && String(row[k]).trim() !== "") {
+          return row[k];
+        }
+      }
+      const allKeys = Object.keys(row);
+      for (const key of allKeys) {
+        const cleanKey = key.trim().toLowerCase();
+        if (fuzzyKeywords.some(kw => cleanKey.includes(kw))) {
+          if (row[key] !== undefined && String(row[key]).trim() !== "") {
+            return row[key];
+          }
+        }
+      }
+      return "";
+    }
+
     function importDrugMasterExcel(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -2306,35 +2407,47 @@
           const workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array", raw: false });
           const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
           const importedRaw = [], seenIds = new Set();
+          let loadedUsageCount = 0;
 
           rows.forEach(row => {
-            const code = String(row["藥品代碼"] || row["藥代"] || row["代碼"] || row["code"] || row["CODE"] || "").trim();
-            const name = String(row["藥品名稱"] || row["品名"] || row["中文商品名"] || row["名稱"] || row["name"] || "").trim();
-            const unit = String(
-              row["盤點的數量計算單位"] || row["數量計算單位"] || row["計算單位"] || row["盤點單位"] || row["單位"] || row["unit"] || ""
-            ).trim();
-            const usageRaw =
-              row["藥品的月消耗量數據"] !== undefined && row["藥品的月消耗量數據"] !== "" ? row["藥品的月消耗量數據"] :
-              row["月消耗量數據"] !== undefined && row["月消耗量數據"] !== "" ? row["月消耗量數據"] :
-              row["月消耗量"] !== undefined && row["月消耗量"] !== "" ? row["月消耗量"] :
-              row["消耗量"] !== undefined && row["消耗量"] !== "" ? row["消耗量"] :
-              row["monthlyUsage"] !== undefined ? row["monthlyUsage"] : "";
+            const code = String(extractRowFieldByKeywords(
+              row,
+              ["藥品代碼", "藥代", "代碼", "code", "CODE"],
+              ["藥代", "代碼", "code"]
+            )).trim();
+            const name = String(extractRowFieldByKeywords(
+              row,
+              ["藥品名稱", "品名", "中文商品名", "名稱", "name"],
+              ["藥名", "品名", "名稱", "name"]
+            )).trim();
+            const unit = String(extractRowFieldByKeywords(
+              row,
+              ["盤點的數量計算單位", "數量計算單位", "計算單位", "盤點單位", "單位", "unit"],
+              ["單位", "unit"]
+            )).trim();
+            const usageRaw = extractRowFieldByKeywords(
+              row,
+              ["藥品的月消耗量", "藥品的月消耗量數據", "月消耗量數據", "月消耗量", "消耗量", "monthlyUsage"],
+              ["消耗", "月耗", "用量", "usage"]
+            );
 
             const id = `${code}__${name}`;
             if (code && name && !seenIds.has(id)) {
               seenIds.add(id);
+              const parsedUsage = parseMonthlyUsageVal(usageRaw);
+              if (parsedUsage !== null) loadedUsageCount++;
               importedRaw.push({
                 id,
                 code,
                 name,
                 unit,
-                monthlyUsage: parseMonthlyUsageVal(usageRaw)
+                monthlyUsage: parsedUsage
               });
             }
           });
 
           if (!importedRaw.length) {
-            alert("請確認 Excel 第一列標題包含「藥品代碼」與「藥品名稱」（並可包含「盤點的數量計算單位」與「藥品的月消耗量數據」）！");
+            alert("請確認 Excel 第一列標題包含「藥品代碼」與「藥品名稱」！");
             return;
           }
 
@@ -2347,7 +2460,7 @@
           renderQuickDrugPills();
           selectDrugById(currentSelectedId, true);
           renderOverviewList();
-          showToast(`✅ 成功匯入 ${importedRaw.length} 筆藥品主檔（含單位與月消耗量，既有盤點紀錄已完整保留）！`);
+          showToast(`✅ 成功匯入 ${importedRaw.length} 筆主檔（含 ${loadedUsageCount} 筆月消耗量數據）！`);
           switchTab("scan");
         } catch (err) {
           alert("讀取 Excel 發生錯誤，請確認檔案格式為 .xlsx 或 .csv。");
@@ -2367,25 +2480,27 @@
         "藥品代碼": d.code,
         "藥品名稱": d.name,
         "盤點的數量計算單位": d.unit || "",
-        "藥品的月消耗量數據": d.monthlyUsage !== null ? d.monthlyUsage : ""
+        "藥品的月消耗量": d.monthlyUsage !== null ? d.monthlyUsage : ""
       }));
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
-      XLSX.utils.book_append_sheet(wb, ws, "白耳鼻喉科藥品主檔(4欄位)");
-      XLSX.writeFile(wb, "白耳鼻喉科_141筆藥品主檔範本_含單位與月消耗量.xlsx");
-      showToast("📄 已下載 4 欄位藥品主檔範本！");
+      XLSX.utils.book_append_sheet(wb, ws, "工作表1");
+      XLSX.writeFile(wb, "白耳鼻喉科藥品基本檔_v5.2.xlsx");
+      showToast("📄 已匯出 141 筆 4 欄位藥品基本檔！");
     }
 
     function restoreBuiltin141Drugs() {
-      if (!confirm("確定要還原為預設的 141 筆藥品清單嗎？（既有盤點紀錄將保留）")) return;
+      if (!confirm("確定要還原為內建的 141 筆 4 欄位藥品基本檔嗎？（既有盤點紀錄將 100% 保留）")) return;
       appState.drugs = [...BUILTIN_DRUGS];
-      currentSelectedId = BUILTIN_DRUGS[0].id;
+      if (!appState.drugs.some(d => d.id === currentSelectedId)) {
+        currentSelectedId = BUILTIN_DRUGS[0].id;
+      }
       saveState();
       renderGlobalNearExpiryBanner();
       renderQuickDrugPills();
       selectDrugById(currentSelectedId, true);
       renderOverviewList();
-      showToast("✅ 已還原內建 141 筆藥品清單！");
+      showToast("✅ 已還原內建 141 筆 4 欄位藥品基本檔！");
     }
 
     function exportBackupJSON() {
@@ -2421,7 +2536,7 @@
     }
 
     function clearAllInventoryData() {
-      if (!confirm("確定要清空所有已輸入的盤點紀錄嗎？（藥品主檔與單位/月消耗量設定將保留）")) return;
+      if (!confirm("確定要清空所有已輸入的盤點紀錄嗎？（141 筆 4 欄位藥品基本檔將保留）")) return;
       appState.records = {};
       saveState();
       renderGlobalNearExpiryBanner();
