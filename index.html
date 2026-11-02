@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="白耳盤點系統" />
-  <title>白耳鼻喉科｜行動藥品盤點系統 v4.9</title>
+  <title>白耳鼻喉科｜行動藥品盤點系統 v5.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -40,7 +40,7 @@
         <div class="flex items-center gap-1.5">
           <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider">ENT</span>
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
-          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v4.9</span>
+          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v5.1</span>
         </div>
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
@@ -72,6 +72,11 @@
 
     <!-- 分頁 1：隨看隨盤作業區 -->
     <section id="tab-scan" class="space-y-2.5">
+
+      <!-- 全院近效期 (120天內) 與屆效前30天耗用預警監控列 -->
+      <div id="globalNearExpiryBanner"></div>
+
+      <!-- 搜尋與語音控制卡 -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
         <div class="flex items-center justify-between mb-1.5">
           <label for="searchInput" class="text-xs font-bold text-slate-600 flex items-center gap-1">
@@ -126,7 +131,7 @@
         <div id="voiceStatusBar" class="mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-1.5">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v4.9 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v5.1 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
           </div>
         </div>
 
@@ -138,6 +143,7 @@
         </div>
       </div>
 
+      <!-- 當前藥品盤點卡 -->
       <div id="activeDrugCardContainer"></div>
     </section>
 
@@ -146,28 +152,33 @@
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div>
-            <h2 class="text-base font-bold text-slate-800">📋 盤點結果總覽（共 141 品項）</h2>
+            <h2 class="text-base font-bold text-slate-800">📋 盤點結果總覽</h2>
             <p class="text-xs text-slate-500">點擊任一品項可直接跳轉修改樓層、數量或 4 碼效期</p>
           </div>
-          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-            <button type="button" onclick="setListFilter('ALL')" id="filterBtn-ALL" class="px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm">全部</button>
-            <button type="button" onclick="setListFilter('DONE')" id="filterBtn-DONE" class="px-2.5 py-1 rounded-lg text-slate-600">已盤點</button>
-            <button type="button" onclick="setListFilter('PENDING')" id="filterBtn-PENDING" class="px-2.5 py-1 rounded-lg text-slate-600">未盤點</button>
+          <div class="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <button type="button" onclick="setListFilter('ALL')" id="filterBtn-ALL" class="px-2 py-1 rounded-lg bg-white text-slate-800 shadow-sm">全部</button>
+            <button type="button" onclick="setListFilter('DONE')" id="filterBtn-DONE" class="px-2 py-1 rounded-lg text-slate-600">已盤點</button>
+            <button type="button" onclick="setListFilter('NEAR_EXPIRY')" id="filterBtn-NEAR_EXPIRY" class="px-2 py-1 rounded-lg text-rose-700">⚠️近效期</button>
+            <button type="button" onclick="setListFilter('PENDING')" id="filterBtn-PENDING" class="px-2 py-1 rounded-lg text-slate-600">未盤點</button>
           </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+        <div class="grid grid-cols-4 gap-1.5 mb-3 text-center">
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
-            <div class="text-[11px] text-slate-500 font-semibold">總品項數</div>
-            <div id="statTotalDrugs" class="text-lg font-black text-slate-800">141</div>
+            <div class="text-[10px] text-slate-500 font-semibold">總品項</div>
+            <div id="statTotalDrugs" class="text-base font-black text-slate-800">141</div>
           </div>
           <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2">
-            <div class="text-[11px] text-emerald-700 font-semibold">已盤點品項</div>
-            <div id="statCountedDrugs" class="text-lg font-black text-emerald-700">0</div>
+            <div class="text-[10px] text-emerald-700 font-semibold">已盤點</div>
+            <div id="statCountedDrugs" class="text-base font-black text-emerald-700">0</div>
+          </div>
+          <div class="bg-rose-50 border border-rose-200 rounded-xl p-2">
+            <div class="text-[10px] text-rose-700 font-semibold">近效期品項</div>
+            <div id="statNearExpiryDrugs" class="text-base font-black text-rose-600">0</div>
           </div>
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-2">
-            <div class="text-[11px] text-amber-700 font-semibold">總批次筆數</div>
-            <div id="statTotalBatches" class="text-lg font-black text-amber-700">0</div>
+            <div class="text-[10px] text-amber-700 font-semibold">總批次數</div>
+            <div id="statTotalBatches" class="text-base font-black text-amber-700">0</div>
           </div>
         </div>
 
@@ -190,7 +201,7 @@
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
         <h2 class="text-base font-bold text-slate-800">📊 匯出盤點 Excel 報表 (.xlsx)</h2>
         <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-          包含 3 個工作表：<strong>1_效期批號明細表</strong>、<strong>2_單品總量彙總表</strong>（自動排除「開」並分列 1樓/3樓）、<strong>3_歷次複盤修改紀錄</strong>。
+          包含 4 個工作表：<strong>1_效期批號明細表</strong>（含單位、月消耗量、120天近效期與屆效前30天耗用評估；若數量為「開」則僅提醒近效期）、<strong>2_單品總量彙總表</strong>、<strong>3_歷次複盤修改紀錄</strong>、以及 <strong>4_近效期與耗用預警專表</strong>。
         </p>
         <button type="button" onclick="exportToExcel()" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-2 text-sm transition">
           <span>📥 立即下載 Excel 盤點報表 (.xlsx)</span>
@@ -198,15 +209,23 @@
       </div>
 
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <h2 class="text-base font-bold text-slate-800">📂 藥品清單主檔管理（已內建 141 筆）</h2>
-        <div class="mt-3 flex flex-col sm:flex-row gap-2">
-          <label class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-center text-xs cursor-pointer transition">
-            <span>📤 匯入新版藥品清單 Excel (.xlsx/.csv)</span>
+        <h2 class="text-base font-bold text-slate-800">📂 藥品清單主檔管理（支援 4 欄位：含單位與月消耗量）</h2>
+        <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+          支援匯入包含「<strong>藥品代碼</strong>」、「<strong>藥品名稱</strong>」、「<strong>盤點的數量計算單位</strong>」、「<strong>藥品的月消耗量數據</strong>」4 個欄位的 Excel 檔。匯入後會自動更新各藥品的單位與月消耗量，<strong>且您手機內既有的盤點紀錄會 100% 完整保留！</strong>
+        </p>
+        <div class="mt-3 flex flex-col gap-2">
+          <label class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-center text-xs cursor-pointer transition shadow">
+            <span>📤 匯入 4 欄位藥品清單 Excel (.xlsx/.csv)</span>
             <input type="file" id="excelMasterInput" accept=".xlsx,.xls,.csv" onchange="importDrugMasterExcel(event)" class="hidden" />
           </label>
-          <button type="button" onclick="restoreBuiltin141Drugs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition">
-            🔄 還原內建 141 筆藥品主檔
-          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="download4ColumnMasterTemplate()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold py-2.5 px-3 rounded-xl text-xs transition">
+              📄 下載 141 筆 4欄位範本
+            </button>
+            <button type="button" onclick="restoreBuiltin141Drugs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs transition">
+              🔄 還原內建 141 筆主檔
+            </button>
+          </div>
         </div>
       </div>
 
@@ -223,7 +242,7 @@
         </div>
         <div class="pt-2 border-t border-slate-100">
           <button type="button" onclick="clearAllInventoryData()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-3 rounded-xl text-xs">
-            🗑️ 清空所有已輸入的盤點紀錄（保留 141 筆藥品主檔）
+            🗑️ 清空所有已輸入的盤點紀錄（保留藥品主檔）
           </button>
         </div>
       </div>
@@ -248,7 +267,7 @@
 
   <script>
     // =========================================================================
-    // 1. 白耳鼻喉科 141 筆完整內建藥品清單
+    // 1. 白耳鼻喉科 141 筆完整內建藥品清單（支援擴充 unit 與 monthlyUsage）
     // =========================================================================
     const RAW_BUILTIN_DRUGS = [
       { code: "TAMI", name: "易剋冒(公費)" }, { code: "TAMIO", name: "易剋冒(自費)" },
@@ -328,12 +347,24 @@
       { code: "VALD", name: "煩多閃25mg" }
     ];
 
+    function parseMonthlyUsageVal(val) {
+      if (val === null || val === undefined || String(val).trim() === "") return null;
+      const num = parseFloat(String(val).trim());
+      return (!isNaN(num) && num >= 0) ? num : null;
+    }
+
     function normalizeDrugList(list) {
-      return list.map(item => ({
-        id: `${String(item.code).trim()}__${String(item.name).trim()}`,
-        code: String(item.code).trim(),
-        name: String(item.name).trim()
-      }));
+      return list.map(item => {
+        const code = String(item.code || "").trim();
+        const name = String(item.name || "").trim();
+        return {
+          id: `${code}__${name}`,
+          code,
+          name,
+          unit: String(item.unit || "").trim(),
+          monthlyUsage: parseMonthlyUsageVal(item.monthlyUsage)
+        };
+      });
     }
 
     const BUILTIN_DRUGS = normalizeDrugList(RAW_BUILTIN_DRUGS);
@@ -358,6 +389,7 @@
     let currentSelectedId = "AM5__安蒙西林500";
     let editingBatches = [];
     let currentListFilter = "ALL";
+    let isGlobalAlertExpanded = false;
 
     // 強制穿透快取重新載入最新版程式碼（保留 localStorage 既有盤點資料）
     async function forceHardReload() {
@@ -380,7 +412,317 @@
     }
 
     // =========================================================================
-    // 2. 初始化、資料持久化與「盤點日自動跟隨當日實際日期」機制
+    // 2. 近效期 (120天內) 推算與「屆效前30天能否使用完畢」核心精算引擎
+    //    （數量為「開」等非數字批次：不納入庫存與耗用計算，僅單純提醒近效期）
+    // =========================================================================
+    // 將 4 碼效期 (如 "2703", "2704", "2802") 轉換為當月最後一天 (自動處理平年28天/閏年29天)
+    function parse4DigitExpiryToEndOfMonth(expStr) {
+      const clean = String(expStr ?? "").trim();
+      if (!/^\d{4}$/.test(clean)) return null;
+      const yy = parseInt(clean.slice(0, 2), 10);
+      const mm = parseInt(clean.slice(2, 4), 10);
+      if (mm < 1 || mm > 12) return null;
+      const year = 2000 + yy;
+      const lastDay = new Date(year, mm, 0).getDate();
+      const dateStr = `${year}-${String(mm).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      const utcMs = Date.UTC(year, mm - 1, lastDay);
+      return { year, month: mm, lastDay, dateStr, utcMs };
+    }
+
+    function parseDateStrToUtcMs(dateStr) {
+      const parts = String(dateStr || "").split("-");
+      if (parts.length !== 3) {
+        const now = new Date();
+        return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      }
+      return Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+
+    function formatNumSmart(val, maxDec = 3) {
+      if (val === null || val === undefined || isNaN(val)) return "";
+      return Number(Math.round(Number(val + "e" + maxDec)) + "e-" + maxDec).toString();
+    }
+
+    function evaluateDrugBatchesExpiryAndDepletion(drug, batches, refDateStr) {
+      const refUtcMs = parseDateStrToUtcMs(refDateStr || appState.workingDate);
+      const unitStr = drug?.unit ? drug.unit : "";
+      const monthlyUsage = parseMonthlyUsageVal(drug?.monthlyUsage);
+
+      const parsedMeta = (batches || []).map((b, idx) => {
+        const expInfo = parse4DigitExpiryToEndOfMonth(b.expiry);
+        const rawQty = String(b.qty ?? "").trim();
+        const isNum = isStrictNumericQty(rawQty);
+        const numQty = isNum ? parseFloat(rawQty) : 0;
+        const daysToExpiry = expInfo ? Math.round((expInfo.utcMs - refUtcMs) / 86400000) : null;
+        return {
+          index: idx,
+          floor: b.floor === "3樓" ? "3樓" : "1樓",
+          rawQty,
+          rawExpiry: String(b.expiry ?? "").trim(),
+          isNum,
+          numQty,
+          expInfo,
+          daysToExpiry
+        };
+      });
+
+      return parsedMeta.map(item => {
+        if (!item.expInfo || item.daysToExpiry === null) {
+          return {
+            ...item,
+            status: "UNKNOWN",
+            isAlert: false,
+            isTextQtyOnlyReminder: !item.isNum && item.rawQty !== "",
+            expiryDateStr: "",
+            daysUntil30Before: null,
+            usableBefore30Days: null,
+            cumulativeQtyToClear: null,
+            daysNeededToClear: null,
+            canFinish30DaysBefore: null,
+            depletionBadgeHtml: "",
+            depletionTextPlain: ""
+          };
+        }
+
+        const daysToExp = item.daysToExpiry;
+        const daysUntil30Before = daysToExp - 30;
+        const isExpired = daysToExp < 0;
+        const isNearExpiry = daysToExp >= 0 && daysToExp <= 120; // 末效期往前推算 120 天內
+        const isAlert = isExpired || isNearExpiry;
+
+        // 【v5.1 核心規範】：若該批數量為「開」（或非數字文字），不納入庫存與耗用計算，僅單純提醒近效期或過期！
+        if (!item.isNum) {
+          let textPlain = "";
+          let badgeHtml = "";
+          if (isExpired) {
+            textPlain = `🚨 已過效期 ${Math.abs(daysToExp)} 天（末效日 ${item.expInfo.dateStr}｜數量為「${item.rawQty || '未填'}」不計入庫存）`;
+            badgeHtml = `<span class="text-rose-700 font-black">🚨 已過效期 (${Math.abs(daysToExp)}天前到期)｜數量「${escapeHtml(item.rawQty || '未填')}」不計入庫存</span>`;
+          } else if (isNearExpiry) {
+            textPlain = `⚠️ 近效期提醒：距末效日 (${item.expInfo.dateStr}) 剩 ${daysToExp} 天（數量為「${item.rawQty || '開'}」，不納入庫存與耗用計算）`;
+            badgeHtml = `<span class="text-amber-800 font-black">⚠️ 近效期提醒：距末效日 ${item.expInfo.dateStr} 剩 ${daysToExp} 天（數量「${escapeHtml(item.rawQty || '開')}」不納入庫存計算）</span>`;
+          }
+          return {
+            ...item,
+            status: isExpired ? "EXPIRED" : (isNearExpiry ? "NEAR_EXPIRY" : "OK"),
+            isExpired,
+            isNearExpiry,
+            isAlert,
+            isTextQtyOnlyReminder: true,
+            expiryDateStr: item.expInfo.dateStr,
+            daysUntil30Before: null,
+            usableBefore30Days: null,
+            cumulativeQtyToClear: null,
+            daysNeededToClear: null,
+            remainAt30DaysBefore: null,
+            canFinish30DaysBefore: null,
+            depletionBadgeHtml: badgeHtml,
+            depletionTextPlain: textPlain
+          };
+        }
+
+        // 以下僅針對「純數字數量批次」計算同效期及更早效期之累計需耗用庫存（自動忽略所有「開」的批次）
+        let cumulativeQtyToClear = 0;
+        parsedMeta.forEach(other => {
+          if (other.expInfo && other.isNum && other.expInfo.utcMs <= item.expInfo.utcMs) {
+            cumulativeQtyToClear += other.numQty;
+          }
+        });
+
+        let canFinish30DaysBefore = null;
+        let usableBefore30Days = null;
+        let daysNeededToClear = null;
+        let remainAt30DaysBefore = null;
+        let depletionBadgeHtml = "";
+        let depletionTextPlain = "";
+
+        if (isAlert) {
+          if (isExpired) {
+            canFinish30DaysBefore = false;
+            depletionTextPlain = `🚨 已過效期 ${Math.abs(daysToExp)} 天（末效日 ${item.expInfo.dateStr}），請立即下架停用！`;
+            depletionBadgeHtml = `<span class="text-rose-700 font-black">🚨 已過效期 (${Math.abs(daysToExp)}天前到期)，不可使用！</span>`;
+          } else if (monthlyUsage === null) {
+            depletionTextPlain = `⚠️ 近效期（剩 ${daysToExp} 天，末效日 ${item.expInfo.dateStr}）｜尚未設定月消耗量`;
+            depletionBadgeHtml = `<span class="text-amber-700 font-bold">⚠️ 近效期（剩 ${daysToExp} 天）｜未設月消耗量（點上方「⚙️設定」可精算耗用）</span>`;
+          } else if (monthlyUsage === 0) {
+            canFinish30DaysBefore = cumulativeQtyToClear === 0;
+            depletionTextPlain = `❌ 月消耗量為 0${unitStr}，無法於屆效前30天用畢（目前數字庫存 ${formatNumSmart(cumulativeQtyToClear)}${unitStr}）！`;
+            depletionBadgeHtml = `<span class="text-rose-700 font-black">❌ 月消耗量為 0${escapeHtml(unitStr)}，屆效前30天無法用完！</span>`;
+          } else {
+            const dailyRate = monthlyUsage / 30;
+            daysNeededToClear = Math.ceil(cumulativeQtyToClear / dailyRate);
+
+            if (daysUntil30Before <= 0) {
+              canFinish30DaysBefore = false;
+              usableBefore30Days = 0;
+              remainAt30DaysBefore = cumulativeQtyToClear;
+              depletionTextPlain = `❌ 無法於屆效前30天用畢（已進入屆效前30天內，僅剩 ${daysToExp} 天到期；依月耗 ${monthlyUsage}${unitStr} 推算，耗完 ${formatNumSmart(cumulativeQtyToClear)}${unitStr} 需 ${daysNeededToClear} 天）！`;
+              depletionBadgeHtml = `<span class="text-rose-700 font-black">❌ 已進入屆效前30天內(僅剩${daysToExp}天)，耗完需 ${daysNeededToClear} 天！</span>`;
+            } else {
+              usableBefore30Days = dailyRate * daysUntil30Before;
+              if (cumulativeQtyToClear <= usableBefore30Days) {
+                canFinish30DaysBefore = true;
+                remainAt30DaysBefore = 0;
+                depletionTextPlain = `✅ 可於屆效前30天使用完畢（距屆效前30天尚有 ${daysUntil30Before} 天，最多可消耗 ${formatNumSmart(usableBefore30Days)}${unitStr}；目前需耗用 ${formatNumSmart(cumulativeQtyToClear)}${unitStr} 約需 ${daysNeededToClear} 天用完）`;
+                depletionBadgeHtml = `<span class="text-emerald-700 font-black">✅ 可於屆效前30天用畢（約需 ${daysNeededToClear} 天用完，尚有 ${daysUntil30Before} 天可用）</span>`;
+              } else {
+                canFinish30DaysBefore = false;
+                remainAt30DaysBefore = cumulativeQtyToClear - usableBefore30Days;
+                depletionTextPlain = `❌ 無法於屆效前30天使用完畢！距屆效前30天僅剩 ${daysUntil30Before} 天（依月耗 ${monthlyUsage}${unitStr} 最多僅能消耗 ${formatNumSmart(usableBefore30Days)}${unitStr}），預估屆效前30天仍剩餘 ${formatNumSmart(remainAt30DaysBefore)}${unitStr}（耗完需 ${daysNeededToClear} 天，恐過期報廢）！`;
+                depletionBadgeHtml = `<span class="text-rose-700 font-black">❌ 屆效前30天無法用完！預估仍會剩餘 ${formatNumSmart(remainAt30DaysBefore)}${escapeHtml(unitStr)}（最多僅能消耗 ${formatNumSmart(usableBefore30Days)}${escapeHtml(unitStr)}）</span>`;
+              }
+            }
+          }
+        }
+
+        return {
+          ...item,
+          status: isExpired ? "EXPIRED" : (isNearExpiry ? "NEAR_EXPIRY" : "OK"),
+          isExpired,
+          isNearExpiry,
+          isAlert,
+          isTextQtyOnlyReminder: false,
+          expiryDateStr: item.expInfo.dateStr,
+          daysUntil30Before,
+          usableBefore30Days,
+          cumulativeQtyToClear,
+          daysNeededToClear,
+          remainAt30DaysBefore,
+          canFinish30DaysBefore,
+          depletionBadgeHtml,
+          depletionTextPlain
+        };
+      });
+    }
+
+    function getAllNearExpiryAlerts(refDateStr) {
+      const targetDate = refDateStr || appState.workingDate;
+      const alertItems = [];
+
+      appState.drugs.forEach(d => {
+        const rec = appState.records[d.id];
+        if (!rec || !Array.isArray(rec.batches) || rec.batches.length === 0) return;
+        const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, targetDate);
+        const riskyBatches = evals.filter(e => e.isAlert);
+        if (riskyBatches.length > 0) {
+          alertItems.push({
+            drug: d,
+            lastUpdatedDate: rec.lastUpdatedDate,
+            riskyBatches
+          });
+        }
+      });
+
+      alertItems.sort((a, b) => {
+        const minA = Math.min(...a.riskyBatches.map(x => x.daysToExpiry));
+        const minB = Math.min(...b.riskyBatches.map(x => x.daysToExpiry));
+        return minA - minB;
+      });
+
+      return alertItems;
+    }
+
+    function toggleGlobalAlertExpand() {
+      isGlobalAlertExpanded = !isGlobalAlertExpanded;
+      renderGlobalNearExpiryBanner();
+    }
+
+    function renderGlobalNearExpiryBanner() {
+      const container = document.getElementById("globalNearExpiryBanner");
+      if (!container) return;
+
+      const alerts = getAllNearExpiryAlerts(appState.workingDate);
+      if (alerts.length === 0) {
+        container.innerHTML = `
+          <div class="bg-emerald-950/90 text-emerald-200 border border-emerald-700/70 rounded-xl px-3 py-2 text-xs flex items-center justify-between">
+            <div class="flex items-center gap-1.5 font-bold">
+              <span>🛡️ 近效期監控（基準日 ${escapeHtml(appState.workingDate)}）：</span>
+              <span class="text-white">目前無 120 天內近效期品項</span>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      let totalRiskyBatches = 0;
+      let cannotFinishCount = 0;
+      alerts.forEach(item => {
+        totalRiskyBatches += item.riskyBatches.length;
+        item.riskyBatches.forEach(rb => {
+          if (!rb.isTextQtyOnlyReminder && rb.canFinish30DaysBefore === false) {
+            cannotFinishCount++;
+          }
+        });
+      });
+
+      const listHtml = alerts.map(item => {
+        const d = item.drug;
+        const unitLabel = d.unit ? ` ${escapeHtml(d.unit)}` : "";
+        const hasNumericRisky = item.riskyBatches.some(rb => !rb.isTextQtyOnlyReminder);
+
+        const batchesHtml = item.riskyBatches.map(rb => {
+          const qtyDisplay = rb.isNum ? `${escapeHtml(rb.rawQty)}${unitLabel}` : `${escapeHtml(rb.rawQty)}`;
+          const dayBadge = rb.isExpired
+            ? `<span class="bg-rose-700 text-white px-1.5 py-0.5 rounded text-[10px] font-black">已過期 ${Math.abs(rb.daysToExpiry)}天</span>`
+            : `<span class="bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded text-[10px] font-black">剩 ${rb.daysToExpiry} 天 (${rb.expiryDateStr})</span>`;
+          return `
+            <div class="mt-1 pl-2 border-l-2 border-rose-400 text-[11px] leading-snug">
+              <div class="flex flex-wrap items-center gap-1 font-bold text-slate-900">
+                <span class="px-1.5 py-0.2 rounded bg-slate-200 text-slate-800 text-[10px]">${escapeHtml(rb.floor)}</span>
+                <span>效期: <strong class="font-mono text-indigo-800">${escapeHtml(rb.rawExpiry)}</strong></span>
+                <span>數量: <strong class="text-rose-700">${qtyDisplay}</strong></span>
+                ${dayBadge}
+              </div>
+              <div class="mt-0.5">${rb.depletionBadgeHtml}</div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div
+            onclick="selectDrugById('${escapeQuotes(d.id)}', true)"
+            class="bg-white border border-rose-300 hover:border-rose-500 rounded-xl p-2.5 cursor-pointer shadow-sm transition"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span class="bg-slate-900 text-amber-300 font-mono font-black text-xs px-2 py-0.5 rounded">${escapeHtml(d.code)}</span>
+                <span class="font-black text-sm text-slate-900">${escapeHtml(d.name)}</span>
+              </div>
+              <span class="text-[11px] font-bold text-slate-500">
+                ${hasNumericRisky ? (d.monthlyUsage !== null ? `月耗: ${d.monthlyUsage}${unitLabel}` : `未設月耗量`) : `僅提醒近效期`}
+              </span>
+            </div>
+            ${batchesHtml}
+          </div>
+        `;
+      }).join("");
+
+      container.innerHTML = `
+        <div class="bg-rose-50 border-2 border-rose-500 rounded-2xl p-3 shadow-sm">
+          <div class="flex items-center justify-between gap-2 cursor-pointer" onclick="toggleGlobalAlertExpand()">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base">🚨</span>
+              <div>
+                <div class="text-xs sm:text-sm font-black text-rose-900">
+                  近效期(120天內)與耗用預警：共 ${alerts.length} 品項 (${totalRiskyBatches} 批)
+                </div>
+                <div class="text-[11px] font-bold text-rose-700">
+                  基準日 ${escapeHtml(appState.workingDate)}｜${cannotFinishCount > 0 ? `⚠️ 有 ${cannotFinishCount} 批數字庫存無法於屆效前30天用畢！` : `點此展開查看各批近效期明細`}
+                </div>
+              </div>
+            </div>
+            <button type="button" class="bg-rose-600 text-white text-xs font-black px-2.5 py-1 rounded-lg shrink-0">
+              ${isGlobalAlertExpanded ? "收合 ▲" : "展開 ▼"}
+            </button>
+          </div>
+          <div class="${isGlobalAlertExpanded ? 'mt-2.5 space-y-2 max-h-64 overflow-y-auto pr-0.5' : 'hidden'}">
+            ${listHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 3. 初始化、資料持久化與「盤點日自動跟隨當日實際日期」機制
     // =========================================================================
     function initApp() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -390,7 +732,6 @@
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // 關鍵修正 1：每次開啟系統時，強制自動將盤點日更新為今天的實際日期（不再停留在昨日舊日期）
           appState.workingDate = todayStr;
           appState.defaultFloor = parsed.defaultFloor === "3樓" ? "3樓" : "1樓";
           appState.drugs = (Array.isArray(parsed.drugs) && parsed.drugs.length > 0)
@@ -411,6 +752,7 @@
       saveState();
       document.getElementById("workingDateInput").value = appState.workingDate;
       updateDefaultFloorUI();
+      renderGlobalNearExpiryBanner();
       renderQuickDrugPills();
 
       const initialDrug = appState.drugs.find(d => d.id === currentSelectedId) || appState.drugs[0];
@@ -418,7 +760,6 @@
       renderOverviewList();
     }
 
-    // 當手機從背景喚醒（例如隔天 10/30 直接打開未關閉的桌面捷徑）時，自動檢查並同步為當日最新日期
     function checkAndAutoSyncRealDate() {
       const currentRealToday = getTodayDateString();
       if (currentRealToday !== lastKnownRealDate) {
@@ -427,15 +768,15 @@
         const dateInput = document.getElementById("workingDateInput");
         if (dateInput) dateInput.value = currentRealToday;
         saveState();
+        renderGlobalNearExpiryBanner();
         if (currentSelectedId) renderActiveDrugCard(currentSelectedId);
+        renderOverviewList();
         showToast(`📅 已自動切換為今日盤點日：${currentRealToday}`);
       }
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        checkAndAutoSyncRealDate();
-      }
+      if (document.visibilityState === "visible") checkAndAutoSyncRealDate();
     });
     window.addEventListener("pageshow", checkAndAutoSyncRealDate);
     window.addEventListener("focus", checkAndAutoSyncRealDate);
@@ -452,8 +793,15 @@
       if (val) {
         appState.workingDate = val;
         saveState();
+        renderGlobalNearExpiryBanner();
         if (currentSelectedId) renderActiveDrugCard(currentSelectedId);
-        showToast(`📅 已切換盤點作業日期為：${val}`);
+        renderOverviewList();
+        const alerts = getAllNearExpiryAlerts(val);
+        if (alerts.length > 0) {
+          showToast(`⚠️ 基準日 ${val}：偵測到 ${alerts.length} 項近效期藥品！`);
+        } else {
+          showToast(`📅 已切換盤點作業日期為：${val}`);
+        }
       }
     }
 
@@ -477,7 +825,7 @@
     }
 
     // =========================================================================
-    // 3. 數量與樓層計算邏輯（排除「開」等文字）
+    // 4. 數量與樓層計算邏輯（排除「開」等文字）
     // =========================================================================
     function isStrictNumericQty(val) {
       if (val === null || val === undefined) return false;
@@ -504,12 +852,11 @@
     }
 
     // =========================================================================
-    // 4. v4.9 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
+    // 5. v5.1 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
     // =========================================================================
     let sharedRecognition = null;
     let isHardwareMicStreamOpen = false;
     let isListeningWindowOpen = false;
-    // voiceTarget: { mode: 'DRUG' | 'QTY' | 'EXPIRY', batchIndex: null | number }
     let voiceTarget = { mode: "DRUG", batchIndex: null };
     let fullRawTranscript = "";
     let consumedRawTranscript = "";
@@ -517,7 +864,6 @@
     let autoLockTimer = null;
     let quickStopTimer = null;
 
-    // 藥品名稱與代碼轉譯
     function normalizeVoiceTranscript(rawText) {
       if (!rawText) return "";
       let s = String(rawText).replace(/[。，、？ ！?.,\s\-_]/g, "").trim();
@@ -545,11 +891,9 @@
       return s.replace(/__BIBAIXIN__/g, "必百欣").replace(/__ERQIANG__/g, "二羥");
     }
 
-    // 專供「數量」與「效期」使用的單一數字逐碼轉譯器（例如念「一六」-> 16、「二五八」-> 258、「二八零四」-> 2804）
     function normalizeSingleDigitsOnly(rawText) {
       if (!rawText) return "";
       let s = String(rawText);
-      // 萬一 iOS 語音引擎因為講太快把「一六」自動轉成「十六」，先做防呆還原為「16」
       s = s.replace(/^十([一二三四五六七八九])/g, "1$1");
       s = s.replace(/([一二兩三四五六七八九])十([一二三四五六七八九])/g, "$1$2");
       s = s.replace(/([一二兩三四五六七八九])十/g, "$10");
@@ -581,14 +925,10 @@
 
     function extractDeltaSpeech(fullStr, baseStr) {
       if (!baseStr) return fullStr;
-      if (fullStr.startsWith(baseStr)) {
-        return fullStr.slice(baseStr.length);
-      }
+      if (fullStr.startsWith(baseStr)) return fullStr.slice(baseStr.length);
       let i = 0;
       const minLen = Math.min(fullStr.length, baseStr.length);
-      while (i < minLen && fullStr[i] === baseStr[i]) {
-        i++;
-      }
+      while (i < minLen && fullStr[i] === baseStr[i]) i++;
       return fullStr.slice(i);
     }
 
@@ -598,7 +938,6 @@
       return "【藥品搜尋】";
     }
 
-    // 動態更新數量與效期欄位內的迷你語音按鈕狀態，不重繪整張卡片避免跳動
     function refreshFieldMicButtonsUI() {
       editingBatches.forEach((_, idx) => {
         const qtyBtn = document.getElementById(`qtyVoiceBtn-${idx}`);
@@ -684,7 +1023,7 @@
         statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
         statusText.className = "font-bold text-slate-600 leading-snug";
-        statusText.textContent = message || "[v4.9 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
+        statusText.textContent = message || "[v5.1 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
       }
       refreshFieldMicButtonsUI();
     }
@@ -728,7 +1067,6 @@
 
         currentSessionDeltaRaw = deltaRaw;
 
-        // 分流處理：藥品搜尋 vs 數量單一數字 vs 效期單一數字
         if (voiceTarget.mode === "DRUG") {
           const cleanDrug = normalizeVoiceTranscript(deltaRaw);
           if (!cleanDrug) return;
@@ -778,7 +1116,6 @@
 
           clearTimeout(autoLockTimer);
           clearTimeout(quickStopTimer);
-          // 若效期已經念滿 4 碼數字（例如 2804），加快於 350ms 自動鎖定！
           const waitMs = digits.length >= 4 ? 350 : 650;
           autoLockTimer = setTimeout(() => {
             if (isListeningWindowOpen && currentSessionDeltaRaw) {
@@ -825,9 +1162,7 @@
       return recognition;
     }
 
-    // 啟動上方「藥品搜尋」語音
     function startDrugVoiceRecognition() {
-      // 若正在對數量或效期收音，且已有內容，先幫該欄位結算鎖定
       if (isListeningWindowOpen && voiceTarget.mode !== "DRUG" && currentSessionDeltaRaw) {
         softLockVoiceResult(currentSessionDeltaRaw);
       }
@@ -840,20 +1175,16 @@
       activateKeepAliveVoiceWindow("🟢 綠燈收音中！請直接說出藥品代碼或名稱...");
     }
 
-    // 啟動或停止批次列內的「數量 (QTY)」或「效期 (EXPIRY)」單一數字語音
     function toggleFieldVoice(mode, batchIndex) {
-      // 若使用者點擊的是目前正在收音中的同一顆欄位按鈕 ⏹️，則立即停止並鎖定該欄位！
       if (isListeningWindowOpen && voiceTarget.mode === mode && voiceTarget.batchIndex === batchIndex) {
         stopVoiceRecognition();
         return;
       }
 
-      // 若原本正在對另一個欄位收音且有內容，先將上一欄位鎖定
       if (isListeningWindowOpen && currentSessionDeltaRaw) {
         softLockVoiceResult(currentSessionDeltaRaw);
       }
 
-      // 收起手機虛擬鍵盤，避免鍵盤與語音衝突
       if (document.activeElement && typeof document.activeElement.blur === "function") {
         document.activeElement.blur();
       }
@@ -1007,7 +1338,7 @@
     }
 
     // =========================================================================
-    // 5. 階梯式精準搜尋與快速選藥
+    // 6. 階梯式精準搜尋與快速選藥
     // =========================================================================
     function renderQuickDrugPills() {
       const container = document.getElementById("quickDrugPills");
@@ -1034,11 +1365,19 @@
         const rec = appState.records[d.id];
         const isSelected = d.id === currentSelectedId;
         const hasRecord = rec && rec.batches && rec.batches.length > 0;
+        let hasNearExpiry = false;
+        if (hasRecord) {
+          const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, appState.workingDate);
+          hasNearExpiry = evals.some(e => e.isAlert);
+        }
+
         const badgeStyle = isSelected
           ? "bg-slate-900 text-white border-slate-900"
-          : hasRecord
-            ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
-            : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200";
+          : hasNearExpiry
+            ? "bg-rose-50 text-rose-900 border-rose-400 hover:bg-rose-100"
+            : hasRecord
+              ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+              : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200";
 
         return `
           <button
@@ -1048,7 +1387,7 @@
           >
             <span class="font-mono">${escapeHtml(d.code)}</span>
             <span>${escapeHtml(d.name)}</span>
-            ${hasRecord ? '<span class="text-emerald-500 font-black">✓</span>' : ''}
+            ${hasNearExpiry ? '<span class="text-rose-500 font-black">⚠️</span>' : (hasRecord ? '<span class="text-emerald-500 font-black">✓</span>' : '')}
           </button>
         `;
       }).join("");
@@ -1080,6 +1419,7 @@
       dropdown.innerHTML = list.slice(0, 25).map(d => {
         const rec = appState.records[d.id];
         const stats = rec ? calculateBatchStats(rec.batches) : null;
+        const unitLabel = d.unit ? ` ${escapeHtml(d.unit)}` : "";
         const isCurrent = d.id === currentSelectedId;
         return `
           <button
@@ -1090,10 +1430,11 @@
             <div class="flex items-center gap-2">
               <span class="inline-block font-mono font-black text-xs bg-slate-900 text-amber-300 px-2 py-0.5 rounded">${escapeHtml(d.code)}</span>
               <span class="font-bold text-sm text-slate-900">${escapeHtml(d.name)}</span>
+              ${d.unit ? `<span class="text-[11px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-bold">${escapeHtml(d.unit)}</span>` : ""}
             </div>
             <div class="text-right">
               ${rec && rec.batches && rec.batches.length > 0
-                ? `<span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">已盤 (${rec.lastUpdatedDate})｜總量 ${stats.totalNumeric}</span>`
+                ? `<span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">已盤 (${rec.lastUpdatedDate})｜總量 ${stats.totalNumeric}${unitLabel}</span>`
                 : `<span class="text-[11px] text-slate-400">尚未盤點</span>`}
             </div>
           </button>
@@ -1152,7 +1493,7 @@
     }
 
     // =========================================================================
-    // 6. 選中藥品並渲染專屬盤點卡（針對手機小螢幕最佳化之雙欄內嵌 🎤 設計）
+    // 7. 選中藥品並渲染專屬盤點卡（含單位、月消耗量、近效期120天提醒與屆效前30天耗用分析）
     // =========================================================================
     function selectDrugById(id, closeDropdown = true) {
       const drug = appState.drugs.find(d => d.id === id);
@@ -1180,6 +1521,71 @@
       renderActiveDrugCard(drug.id);
     }
 
+    function saveCurrentDrugUnitAndUsage() {
+      const drug = appState.drugs.find(d => d.id === currentSelectedId);
+      if (!drug) return;
+      const unitVal = (document.getElementById("inlineUnitInput")?.value || "").trim();
+      const usageRaw = (document.getElementById("inlineUsageInput")?.value || "").trim();
+      drug.unit = unitVal;
+      drug.monthlyUsage = parseMonthlyUsageVal(usageRaw);
+      saveState();
+      renderGlobalNearExpiryBanner();
+      renderActiveDrugCard(drug.id);
+      renderOverviewList();
+      showToast(`✅ 已更新「${drug.name}」單位：${drug.unit || '未設'}｜月消耗量：${drug.monthlyUsage ?? '未設'}`);
+    }
+
+    function buildLiveNearExpiryAlertBoxHtml(drug, batches) {
+      const evals = evaluateDrugBatchesExpiryAndDepletion(drug, batches, appState.workingDate);
+      const alertBatches = evals.filter(e => e.isAlert);
+      if (alertBatches.length === 0) return "";
+
+      const unitLabel = drug.unit ? ` ${escapeHtml(drug.unit)}` : "";
+      const hasNumericAlert = alertBatches.some(ab => !ab.isTextQtyOnlyReminder);
+
+      const usageInfo = hasNumericAlert
+        ? (drug.monthlyUsage !== null
+            ? `月消耗量：<strong>${drug.monthlyUsage}${unitLabel}/月</strong>`
+            : `<span class="underline">尚未設定月消耗量</span>`)
+        : `<span>數量為「開」僅提醒近效期（不計入庫存）</span>`;
+
+      const itemsHtml = alertBatches.map(ab => {
+        const qtyDisplay = ab.isNum ? `${escapeHtml(ab.rawQty || '0')}${unitLabel}` : `${escapeHtml(ab.rawQty || '開')}`;
+        const expTag = ab.isExpired
+          ? `<span class="bg-rose-700 text-white px-1.5 py-0.5 rounded text-[10px] font-black">🚨 已過期 ${Math.abs(ab.daysToExpiry)} 天</span>`
+          : `<span class="bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded text-[10px] font-black">⚠️ 近效期：剩 ${ab.daysToExpiry} 天 (末效日 ${ab.expiryDateStr})</span>`;
+        return `
+          <div class="bg-white/95 border border-rose-300 rounded-xl p-2 text-xs">
+            <div class="flex flex-wrap items-center justify-between gap-1">
+              <div class="flex items-center gap-1.5 font-black text-slate-900">
+                <span class="bg-slate-800 text-white px-1.5 py-0.2 rounded text-[10px]">批次 #${ab.index + 1} (${escapeHtml(ab.floor)})</span>
+                <span>數量: <span class="text-rose-700">${qtyDisplay}</span></span>
+                <span>｜效期: <span class="font-mono text-indigo-800">${escapeHtml(ab.rawExpiry)}</span></span>
+              </div>
+              ${expTag}
+            </div>
+            <div class="mt-1.5 pt-1 border-t border-rose-100 text-[11px] leading-relaxed">
+              ${ab.depletionBadgeHtml}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="mb-2.5 bg-rose-50 border-2 border-rose-500 rounded-xl p-2.5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+            <div class="text-xs font-black text-rose-900 flex items-center gap-1">
+              <span>🚨 近效期(末效前120天內)預警與耗用評估</span>
+            </div>
+            <div class="text-[11px] text-rose-800 font-semibold">${usageInfo}</div>
+          </div>
+          <div class="space-y-1.5">
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
+    }
+
     function renderActiveDrugCard(id) {
       const drug = appState.drugs.find(d => d.id === id);
       const container = document.getElementById("activeDrugCardContainer");
@@ -1187,6 +1593,8 @@
 
       const rec = appState.records[drug.id];
       const liveStats = calculateBatchStats(editingBatches);
+      const unitStr = drug.unit ? drug.unit : "";
+      const unitWithSpace = unitStr ? ` ${escapeHtml(unitStr)}` : "";
 
       const relatedDrugs = appState.drugs.filter(d => d.code === drug.code || d.name === drug.name);
       let siblingSwitchBar = "";
@@ -1221,14 +1629,33 @@
       let previousReviewBanner = "";
       if (rec && rec.lastUpdatedDate) {
         const prevStats = calculateBatchStats(rec.batches);
+        const prevEvals = evaluateDrugBatchesExpiryAndDepletion(drug, rec.batches, appState.workingDate);
         const isDifferentDay = rec.lastUpdatedDate !== appState.workingDate;
-        const batchSummaryBadges = rec.batches.map(b => {
-          const flColor = b.floor === "3樓" ? "bg-sky-200 text-sky-950" : "bg-emerald-200 text-emerald-950";
-          return `<span class="inline-flex items-center gap-1 bg-white border border-amber-300 px-2 py-0.5 rounded-md text-xs font-bold text-slate-800">
-            <span class="px-1.5 py-0.2 rounded text-[11px] font-black ${flColor}">${escapeHtml(b.floor || '1樓')}</span>
-            <span>數量: <strong class="text-rose-700">${escapeHtml(b.qty)}</strong></span>
+
+        const batchSummaryBadges = prevEvals.map(pe => {
+          const flColor = pe.floor === "3樓" ? "bg-sky-200 text-sky-950" : "bg-emerald-200 text-emerald-950";
+          const alertBorder = pe.isAlert ? "border-2 border-rose-500 bg-rose-50/60" : "border border-amber-300 bg-white";
+          const qtyDisp = pe.isNum ? `${escapeHtml(pe.rawQty)}${unitWithSpace}` : `${escapeHtml(pe.rawQty)}`;
+
+          let expWarnTag = "";
+          if (pe.isExpired) {
+            expWarnTag = `<span class="bg-rose-600 text-white px-1 py-0.2 rounded text-[10px] font-black">🚨過期${Math.abs(pe.daysToExpiry)}天</span>`;
+          } else if (pe.isNearExpiry) {
+            if (pe.isTextQtyOnlyReminder) {
+              // 數量為「開」：僅單純提醒近效期
+              expWarnTag = `<span class="bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded text-[10px] font-black">⚠️近效期(剩${pe.daysToExpiry}天)</span>`;
+            } else {
+              const finishIcon = pe.canFinish30DaysBefore === true ? "｜✅可耗完" : (pe.canFinish30DaysBefore === false ? "｜❌屆效前30天用不完" : "");
+              expWarnTag = `<span class="bg-rose-600 text-white px-1.5 py-0.2 rounded text-[10px] font-black">⚠️近效期(剩${pe.daysToExpiry}天${finishIcon})</span>`;
+            }
+          }
+
+          return `<span class="inline-flex flex-wrap items-center gap-1 ${alertBorder} px-2 py-0.5 rounded-md text-xs font-bold text-slate-800">
+            <span class="px-1.5 py-0.2 rounded text-[11px] font-black ${flColor}">${escapeHtml(pe.floor)}</span>
+            <span>數量: <strong class="text-rose-700">${qtyDisp}</strong></span>
             <span class="text-slate-400">|</span>
-            <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(b.expiry)}</strong></span>
+            <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(pe.rawExpiry)}</strong></span>
+            ${expWarnTag}
           </span>`;
         }).join(" ");
 
@@ -1240,7 +1667,7 @@
                 ${isDifferentDay ? `<span class="bg-amber-300 text-amber-950 px-1.5 py-0.5 rounded text-[10px]">跨日複盤 (${escapeHtml(appState.workingDate)})</span>` : `<span class="bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded text-[10px]">當日已盤點</span>`}
               </div>
               <div class="text-xs font-bold text-slate-700">
-                上次總量：<span class="font-black text-sm text-slate-900">${prevStats.totalNumeric}</span>
+                上次總量：<span class="font-black text-sm text-slate-900">${prevStats.totalNumeric}${unitWithSpace}</span>
                 <span class="text-[11px] text-slate-500">（1樓:${prevStats.floor1Numeric}/3樓:${prevStats.floor3Numeric}）</span>
               </div>
             </div>
@@ -1249,13 +1676,26 @@
         `;
       }
 
-      // 手機小螢幕最佳化批次列：50%/50% 對稱雙欄 + 輸入框右側內嵌 32x32px 🎤 語音鈕
+      const liveEvals = evaluateDrugBatchesExpiryAndDepletion(drug, editingBatches, appState.workingDate);
+
       const batchRowsHtml = editingBatches.map((batch, index) => {
         const isFloor1 = batch.floor !== "3樓";
         const isQtyText = batch.qty.trim() !== "" && !isStrictNumericQty(batch.qty);
+        const ev = liveEvals[index];
+
+        let expSubHintHtml = `<div id="expHint-${index}" class="mt-1 text-[10px] leading-tight text-slate-400 text-center">點🎤念4碼(如:二八零四)</div>`;
+        if (ev && ev.expInfo) {
+          if (ev.isExpired) {
+            expSubHintHtml = `<div id="expHint-${index}" class="mt-1 text-[10px] leading-tight text-rose-700 font-black text-center">🚨 已過期 (${ev.expiryDateStr})</div>`;
+          } else if (ev.isNearExpiry) {
+            expSubHintHtml = `<div id="expHint-${index}" class="mt-1 text-[10px] leading-tight text-rose-600 font-black text-center">⚠️ 近效期！剩 ${ev.daysToExpiry} 天 (${ev.expiryDateStr})</div>`;
+          } else {
+            expSubHintHtml = `<div id="expHint-${index}" class="mt-1 text-[10px] leading-tight text-emerald-700 font-bold text-center">末效日 ${ev.expiryDateStr} (剩 ${ev.daysToExpiry} 天)</div>`;
+          }
+        }
 
         return `
-          <div class="bg-slate-50 border-2 border-slate-200 rounded-xl p-2.5 relative transition">
+          <div class="bg-slate-50 border-2 ${ev && ev.isAlert ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200'} rounded-xl p-2.5 relative transition">
             <div class="flex items-center justify-between gap-1.5 mb-2">
               <div class="flex items-center gap-1.5">
                 <span class="bg-slate-800 text-white text-xs font-black px-2 py-0.5 rounded-md">批次 #${index + 1}</span>
@@ -1268,10 +1708,10 @@
             </div>
 
             <div class="grid grid-cols-2 gap-2 items-start">
-              <!-- 左欄：數量 (支援手打、填入「開」、內嵌🎤念單一數字) -->
+              <!-- 左欄：數量 (呈現計算單位 + 支援手打、填入「開」、內嵌🎤念單一數字) -->
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-slate-700">數量</label>
+                  <label class="text-xs font-bold text-slate-700">數量 ${unitStr ? `<span class="text-indigo-700 font-black">(${escapeHtml(unitStr)})</span>` : ''}</label>
                   <button type="button" onclick="fillOpenText(${index})" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded text-[11px] font-black">⚡填入「開」</button>
                 </div>
                 <div class="relative flex items-center">
@@ -1292,11 +1732,11 @@
                   >🎤</button>
                 </div>
                 <div id="qtyHint-${index}" class="mt-1 text-[10px] leading-tight ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}">
-                  ${isQtyText ? '⚠️「' + escapeHtml(batch.qty) + '」不納入總量' : '點🎤念單字(如:二五八)'}
+                  ${isQtyText ? '⚠️「' + escapeHtml(batch.qty) + '」不納入庫存與耗用' : `點🎤念單字${unitStr ? '(單位:' + escapeHtml(unitStr) + ')' : '(如:二五八)'}`}
                 </div>
               </div>
 
-              <!-- 右欄：效期 4碼 (支援手打、內嵌🎤念單一數字) -->
+              <!-- 右欄：效期 4碼 (支援手打、內嵌🎤念單一數字、即時推算末效日) -->
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-xs font-bold text-slate-700">效期 <span class="text-[10px] font-normal text-slate-500">(4碼)</span></label>
@@ -1310,8 +1750,8 @@
                     id="expiryInput-${index}"
                     value="${escapeHtml(batch.expiry)}"
                     oninput="onBatchExpiryInput(${index}, this.value)"
-                    placeholder="如 2804"
-                    class="w-full pl-2.5 pr-10 py-2 bg-white border-2 border-slate-300 focus:border-indigo-600 rounded-xl text-base font-mono font-black text-indigo-900 tracking-wider text-center"
+                    placeholder="如 2703"
+                    class="w-full pl-2.5 pr-10 py-2 bg-white border-2 ${ev && ev.isAlert ? 'border-rose-500 text-rose-900 bg-rose-50/40' : 'border-slate-300 text-indigo-900'} focus:border-indigo-600 rounded-xl text-base font-mono font-black tracking-wider text-center"
                   />
                   <button
                     type="button"
@@ -1321,7 +1761,7 @@
                     class="absolute right-1 w-8 h-8 rounded-lg bg-indigo-100 hover:bg-indigo-200 active:bg-indigo-300 text-indigo-900 border border-indigo-300 text-xs font-black flex items-center justify-center transition"
                   >🎤</button>
                 </div>
-                <div class="mt-1 text-[10px] leading-tight text-slate-400 text-center">點🎤念4碼(如:二八零四)</div>
+                ${expSubHintHtml}
               </div>
             </div>
           </div>
@@ -1335,7 +1775,10 @@
           <div class="mt-2 space-y-1.5 divide-y divide-slate-200">
             ${historyList.slice().reverse().map(h => {
               const st = calculateBatchStats(h.batches);
-              const detailStr = h.batches.map(b => `[${b.floor || '1樓'}] 數量:${b.qty} / 效期:${b.expiry}`).join("；");
+              const detailStr = h.batches.map(b => {
+                const qDisp = isStrictNumericQty(b.qty) ? `${b.qty}${unitStr}` : b.qty;
+                return `[${b.floor || '1樓'}] 數量:${qDisp} / 效期:${b.expiry}`;
+              }).join("；");
               return `
                 <div class="pt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <div>
@@ -1343,7 +1786,7 @@
                     <span class="text-[11px] text-slate-400 ml-1">(${escapeHtml(h.savedAt || '')})</span>
                     <div class="text-slate-700 mt-0.5">${escapeHtml(detailStr)}</div>
                   </div>
-                  <div class="text-right font-bold text-emerald-700 whitespace-nowrap">數字總量：${st.totalNumeric}</div>
+                  <div class="text-right font-bold text-emerald-700 whitespace-nowrap">數字總量：${st.totalNumeric}${unitWithSpace}</div>
                 </div>
               `;
             }).join("")}
@@ -1351,18 +1794,36 @@
         </details>
       ` : "";
 
+      const liveNearExpiryHtml = buildLiveNearExpiryAlertBoxHtml(drug, editingBatches);
+
       container.innerHTML = `
         <div class="bg-white rounded-2xl shadow-md border-2 border-slate-200 p-3">
-          <div class="flex flex-wrap items-start justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-200">
-            <div class="flex items-center gap-2">
-              <span class="bg-slate-900 text-amber-300 font-mono font-black text-base px-2.5 py-0.5 rounded-lg">${escapeHtml(drug.code)}</span>
-              <h2 class="text-lg sm:text-xl font-black text-slate-900">${escapeHtml(drug.name)}</h2>
+          <div class="flex flex-wrap items-start justify-between gap-2 pb-2.5 mb-2 border-b border-slate-200">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="bg-slate-900 text-amber-300 font-mono font-black text-base px-2.5 py-0.5 rounded-lg">${escapeHtml(drug.code)}</span>
+                <h2 class="text-lg sm:text-xl font-black text-slate-900">${escapeHtml(drug.name)}</h2>
+              </div>
+              <details class="mt-1.5 text-xs">
+                <summary class="cursor-pointer select-none inline-flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-lg">
+                  <span>📦 單位：<strong class="text-slate-900">${escapeHtml(drug.unit || "未設定")}</strong></span>
+                  <span>｜📉 月消耗量：<strong class="text-indigo-700">${drug.monthlyUsage !== null ? `${drug.monthlyUsage} ${escapeHtml(drug.unit || '')}/月` : "未設定"}</strong></span>
+                  <span class="text-emerald-700 underline ml-0.5">⚙️設定</span>
+                </summary>
+                <div class="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5">
+                  <input type="text" id="inlineUnitInput" value="${escapeHtml(drug.unit || '')}" placeholder="單位(如:罐、顆)" class="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-bold" />
+                  <input type="number" step="any" id="inlineUsageInput" value="${drug.monthlyUsage !== null ? drug.monthlyUsage : ''}" placeholder="月消耗量(如:0.003)" class="w-32 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-bold" />
+                  <button type="button" onclick="saveCurrentDrugUnitAndUsage()" class="bg-slate-800 text-white px-2.5 py-1 rounded text-xs font-bold shrink-0">儲存設定</button>
+                </div>
+              </details>
             </div>
+
             <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-2.5 py-1 text-right">
               <div class="text-[10px] font-bold text-emerald-800">單品數字總量 (排除「開」)</div>
-              <div class="flex items-baseline justify-end gap-1.5">
+              <div class="flex items-baseline justify-end gap-1">
                 <span id="liveTotalNumericDisplay" class="text-xl font-black text-emerald-700">${liveStats.totalNumeric}</span>
-                <span id="liveFloorBreakdownDisplay" class="text-[11px] font-bold text-slate-600">(1樓:${liveStats.floor1Numeric}/3樓:${liveStats.floor3Numeric})</span>
+                ${unitStr ? `<span class="text-xs font-black text-emerald-800">${escapeHtml(unitStr)}</span>` : ''}
+                <span id="liveFloorBreakdownDisplay" class="text-[11px] font-bold text-slate-600 ml-0.5">(1樓:${liveStats.floor1Numeric}/3樓:${liveStats.floor3Numeric})</span>
               </div>
               <div id="liveTextNoteDisplay" class="text-[10px] text-amber-700 font-bold ${liveStats.textNotes.length ? '' : 'hidden'}">
                 另含：${escapeHtml(liveStats.textNotes.join("、"))}
@@ -1372,6 +1833,10 @@
 
           ${siblingSwitchBar}
           ${previousReviewBanner}
+
+          <!-- 單品即時近效期 (120天內) 與屆效前30天耗用預警容器 -->
+          <div id="liveDrugNearExpiryContainer">${liveNearExpiryHtml}</div>
+
           <div class="space-y-2" id="batchRowsContainer">${batchRowsHtml}</div>
 
           <div class="mt-2.5">
@@ -1393,7 +1858,7 @@
     }
 
     // =========================================================================
-    // 7. 批次欄位互動與儲存
+    // 8. 批次欄位互動與儲存
     // =========================================================================
     function updateBatchFloor(index, floor) {
       if (!editingBatches[index]) return;
@@ -1404,20 +1869,21 @@
     function onBatchQtyInput(index, val) {
       if (!editingBatches[index]) return;
       editingBatches[index].qty = val;
+      const drug = appState.drugs.find(d => d.id === currentSelectedId);
+      const unitStr = drug?.unit || "";
       const isQtyText = val.trim() !== "" && !isStrictNumericQty(val);
       const inputEl = document.getElementById(`qtyInput-${index}`);
       const hintEl = document.getElementById(`qtyHint-${index}`);
       if (inputEl && hintEl) {
         inputEl.className = `w-full pl-2.5 pr-10 py-2 bg-white border-2 ${isQtyText ? 'border-amber-500 text-amber-900 bg-amber-50/40' : 'border-slate-300 text-slate-900'} focus:border-emerald-600 rounded-xl text-base font-black`;
         hintEl.className = `mt-1 text-[10px] leading-tight ${isQtyText ? 'text-amber-700 font-bold' : 'text-slate-400'}`;
-        hintEl.textContent = isQtyText ? `⚠️「${val.trim()}」不納入總量` : "點🎤念單字(如:二五八)";
+        hintEl.textContent = isQtyText ? `⚠️「${val.trim()}」不納入庫存與耗用` : `點🎤念單字${unitStr ? '(單位:' + unitStr + ')' : '(如:二五八)'}`;
       }
       refreshLiveTotalsBanner();
     }
 
     function fillOpenText(index) {
       if (!editingBatches[index]) return;
-      // 若正在對數量收音，自動關閉數量收音
       if (isListeningWindowOpen && voiceTarget.mode === "QTY" && voiceTarget.batchIndex === index) {
         isListeningWindowOpen = false;
         consumedRawTranscript = fullRawTranscript;
@@ -1434,6 +1900,35 @@
     function onBatchExpiryInput(index, val) {
       if (!editingBatches[index]) return;
       editingBatches[index].expiry = val.trim();
+
+      const drug = appState.drugs.find(d => d.id === currentSelectedId);
+      const evals = evaluateDrugBatchesExpiryAndDepletion(drug, editingBatches, appState.workingDate);
+      const ev = evals[index];
+      const expHintEl = document.getElementById(`expHint-${index}`);
+      const expInputEl = document.getElementById(`expiryInput-${index}`);
+
+      if (expHintEl && ev) {
+        if (ev.expInfo) {
+          if (ev.isExpired) {
+            expHintEl.className = "mt-1 text-[10px] leading-tight text-rose-700 font-black text-center";
+            expHintEl.textContent = `🚨 已過期 (${ev.expiryDateStr})`;
+            if (expInputEl) expInputEl.className = "w-full pl-2.5 pr-10 py-2 bg-white border-2 border-rose-500 text-rose-900 bg-rose-50/40 focus:border-indigo-600 rounded-xl text-base font-mono font-black tracking-wider text-center";
+          } else if (ev.isNearExpiry) {
+            expHintEl.className = "mt-1 text-[10px] leading-tight text-rose-600 font-black text-center";
+            expHintEl.textContent = `⚠️ 近效期！剩 ${ev.daysToExpiry} 天 (${ev.expiryDateStr})`;
+            if (expInputEl) expInputEl.className = "w-full pl-2.5 pr-10 py-2 bg-white border-2 border-rose-500 text-rose-900 bg-rose-50/40 focus:border-indigo-600 rounded-xl text-base font-mono font-black tracking-wider text-center";
+          } else {
+            expHintEl.className = "mt-1 text-[10px] leading-tight text-emerald-700 font-bold text-center";
+            expHintEl.textContent = `末效日 ${ev.expiryDateStr} (剩 ${ev.daysToExpiry} 天)`;
+            if (expInputEl) expInputEl.className = "w-full pl-2.5 pr-10 py-2 bg-white border-2 border-slate-300 text-indigo-900 focus:border-indigo-600 rounded-xl text-base font-mono font-black tracking-wider text-center";
+          }
+        } else {
+          expHintEl.className = "mt-1 text-[10px] leading-tight text-slate-400 text-center";
+          expHintEl.textContent = "點🎤念4碼(如:二八零四)";
+          if (expInputEl) expInputEl.className = "w-full pl-2.5 pr-10 py-2 bg-white border-2 border-slate-300 text-indigo-900 focus:border-indigo-600 rounded-xl text-base font-mono font-black tracking-wider text-center";
+        }
+      }
+
       refreshLiveTotalsBanner();
     }
 
@@ -1451,6 +1946,12 @@
         } else {
           noteEl.classList.add("hidden");
         }
+      }
+
+      const drug = appState.drugs.find(d => d.id === currentSelectedId);
+      const alertBoxContainer = document.getElementById("liveDrugNearExpiryContainer");
+      if (drug && alertBoxContainer) {
+        alertBoxContainer.innerHTML = buildLiveNearExpiryAlertBoxHtml(drug, editingBatches);
       }
     }
 
@@ -1488,7 +1989,7 @@
       }
 
       const non4Digit = validBatches.find(b => b.expiry !== "" && !/^\d{4}$/.test(b.expiry));
-      if (non4Digit && !confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2804），確定要原樣儲存嗎？`)) {
+      if (non4Digit && !confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2703），確定要原樣儲存嗎？`)) {
         return;
       }
 
@@ -1512,7 +2013,6 @@
       editingBatches = validBatches.map(b => ({ ...b }));
       saveState();
 
-      // 儲存時將語音重設回軟體靜音待命（保持底層麥克風連線不斷開！）
       clearTimeout(autoLockTimer);
       clearTimeout(quickStopTimer);
       isListeningWindowOpen = false;
@@ -1521,12 +2021,21 @@
       currentSessionDeltaRaw = "";
       updateVoiceControlUI("IDLE", `✅ 已儲存 ${drug.code}！請點「🎤 開始語音搜藥」盤點下一筆`);
 
+      renderGlobalNearExpiryBanner();
       renderQuickDrugPills();
       renderActiveDrugCard(drug.id);
       renderOverviewList();
 
       const stats = calculateBatchStats(validBatches);
-      showToast(`✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}`);
+      const evals = evaluateDrugBatchesExpiryAndDepletion(drug, validBatches, appState.workingDate);
+      const hasRisky = evals.some(e => e.isAlert);
+      const unitStr = drug.unit ? ` ${drug.unit}` : "";
+
+      if (hasRisky) {
+        showToast(`⚠️ 已儲存「${drug.name}」（總量 ${stats.totalNumeric}${unitStr}），含 120 天內近效期批次！`);
+      } else {
+        showToast(`✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}${unitStr}`);
+      }
 
       document.getElementById("searchInput").value = "";
       document.getElementById("clearSearchBtn").classList.add("hidden");
@@ -1534,36 +2043,53 @@
     }
 
     // =========================================================================
-    // 8. 盤點總覽、Excel 匯出與備份管理
+    // 9. 盤點總覽、Excel 匯出與 4 欄位主檔匯入管理
     // =========================================================================
     function setListFilter(filter) {
       currentListFilter = filter;
-      ["ALL", "DONE", "PENDING"].forEach(k => {
-        document.getElementById(`filterBtn-${k}`).className = k === filter
-          ? "px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm"
-          : "px-2.5 py-1 rounded-lg text-slate-600";
+      ["ALL", "DONE", "NEAR_EXPIRY", "PENDING"].forEach(k => {
+        const btn = document.getElementById(`filterBtn-${k}`);
+        if (!btn) return;
+        if (k === filter) {
+          btn.className = k === "NEAR_EXPIRY"
+            ? "px-2 py-1 rounded-lg bg-rose-600 text-white shadow-sm"
+            : "px-2 py-1 rounded-lg bg-white text-slate-800 shadow-sm";
+        } else {
+          btn.className = k === "NEAR_EXPIRY"
+            ? "px-2 py-1 rounded-lg text-rose-700"
+            : "px-2 py-1 rounded-lg text-slate-600";
+        }
       });
       renderOverviewList();
     }
 
     function renderOverviewList() {
-      let countedDrugs = 0, totalBatches = 0;
+      let countedDrugs = 0, totalBatches = 0, nearExpiryDrugs = 0;
+
       appState.drugs.forEach(d => {
         const r = appState.records[d.id];
         if (r && r.batches && r.batches.length > 0) {
           countedDrugs++;
           totalBatches += r.batches.length;
+          const evals = evaluateDrugBatchesExpiryAndDepletion(d, r.batches, appState.workingDate);
+          if (evals.some(e => e.isAlert)) nearExpiryDrugs++;
         }
       });
 
       document.getElementById("statTotalDrugs").textContent = appState.drugs.length;
       document.getElementById("statCountedDrugs").textContent = countedDrugs;
+      document.getElementById("statNearExpiryDrugs").textContent = nearExpiryDrugs;
       document.getElementById("statTotalBatches").textContent = totalBatches;
 
       const kw = (document.getElementById("overviewSearchInput")?.value || "").trim().toUpperCase();
       const filtered = appState.drugs.filter(d => {
-        const hasRec = appState.records[d.id]?.batches?.length > 0;
+        const r = appState.records[d.id];
+        const hasRec = r?.batches?.length > 0;
+        const evals = hasRec ? evaluateDrugBatchesExpiryAndDepletion(d, r.batches, appState.workingDate) : [];
+        const hasNear = evals.some(e => e.isAlert);
+
         if (currentListFilter === "DONE" && !hasRec) return false;
+        if (currentListFilter === "NEAR_EXPIRY" && !hasNear) return false;
         if (currentListFilter === "PENDING" && hasRec) return false;
         if (kw && !d.code.toUpperCase().includes(kw) && !d.name.toUpperCase().includes(kw)) return false;
         return true;
@@ -1579,28 +2105,48 @@
         const rec = appState.records[d.id];
         const hasRec = rec && rec.batches && rec.batches.length > 0;
         const stats = hasRec ? calculateBatchStats(rec.batches) : null;
-        const batchesBadges = hasRec ? rec.batches.map(b => {
-          const flBadge = b.floor === "3樓" ? "bg-sky-100 text-sky-800 border-sky-300" : "bg-emerald-100 text-emerald-800 border-emerald-300";
-          return `<span class="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
-            <span class="px-1.5 py-0.2 rounded border text-[10px] font-black ${flBadge}">${escapeHtml(b.floor || '1樓')}</span>
-            <span>數量: <strong>${escapeHtml(b.qty)}</strong></span>
+        const evals = hasRec ? evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, appState.workingDate) : [];
+        const hasNear = evals.some(e => e.isAlert);
+        const unitLabel = d.unit ? ` ${escapeHtml(d.unit)}` : "";
+
+        const batchesBadges = hasRec ? evals.map(ev => {
+          const flBadge = ev.floor === "3樓" ? "bg-sky-100 text-sky-800 border-sky-300" : "bg-emerald-100 text-emerald-800 border-emerald-300";
+          const boxBorder = ev.isAlert ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50";
+          const qtyDisp = ev.isNum ? `${escapeHtml(ev.rawQty)}${unitLabel}` : `${escapeHtml(ev.rawQty)}`;
+          const alertPill = ev.isExpired
+            ? `<span class="bg-rose-600 text-white px-1 py-0.2 rounded text-[10px] font-black">🚨過期</span>`
+            : (ev.isNearExpiry ? `<span class="bg-amber-400 text-slate-950 px-1 py-0.2 rounded text-[10px] font-black">⚠️剩${ev.daysToExpiry}天</span>` : "");
+
+          return `<span class="inline-flex items-center gap-1 text-xs border ${boxBorder} px-2 py-0.5 rounded-lg">
+            <span class="px-1.5 py-0.2 rounded border text-[10px] font-black ${flBadge}">${escapeHtml(ev.floor)}</span>
+            <span>數量: <strong>${qtyDisp}</strong></span>
             <span class="text-slate-300">|</span>
-            <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(b.expiry)}</strong></span>
+            <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(ev.rawExpiry)}</strong></span>
+            ${alertPill}
           </span>`;
         }).join("") : `<span class="text-xs text-slate-400">尚未建立盤點紀錄</span>`;
 
+        const riskySummaryHtml = hasNear
+          ? `<div class="mt-1.5 pt-1.5 border-t border-rose-200 space-y-1 text-[11px]">
+              ${evals.filter(e => e.isAlert).map(e => `<div>• 效期 ${escapeHtml(e.rawExpiry)} (${e.expiryDateStr})：${e.depletionBadgeHtml}</div>`).join("")}
+            </div>`
+          : "";
+
         return `
-          <div onclick="jumpToDrugFromList('${escapeQuotes(d.id)}')" class="p-3 rounded-xl border ${hasRec ? 'border-emerald-200 bg-white' : 'border-slate-200 bg-slate-50/60'} hover:border-emerald-500 cursor-pointer transition shadow-sm">
+          <div onclick="jumpToDrugFromList('${escapeQuotes(d.id)}')" class="p-3 rounded-xl border ${hasNear ? 'border-2 border-rose-400 bg-rose-50/20' : (hasRec ? 'border-emerald-200 bg-white' : 'border-slate-200 bg-slate-50/60')} hover:border-emerald-500 cursor-pointer transition shadow-sm">
             <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="font-mono font-black text-xs bg-slate-900 text-amber-300 px-2 py-0.5 rounded">${escapeHtml(d.code)}</span>
                 <span class="font-black text-sm text-slate-900">${escapeHtml(d.name)}</span>
+                ${d.unit ? `<span class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-bold">單位:${escapeHtml(d.unit)}</span>` : ""}
+                ${d.monthlyUsage !== null ? `<span class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded font-bold">月耗:${d.monthlyUsage}${unitLabel}</span>` : ""}
               </div>
-              <div class="text-right">
-                ${hasRec ? `<span class="text-xs font-black text-emerald-700">數字總量：${stats.totalNumeric}</span><span class="block text-[10px] text-slate-500">1樓:${stats.floor1Numeric} / 3樓:${stats.floor3Numeric}｜${rec.lastUpdatedDate}</span>` : `<span class="text-xs font-bold text-slate-400">未盤點</span>`}
+              <div class="text-right shrink-0">
+                ${hasRec ? `<span class="text-xs font-black text-emerald-700">總量：${stats.totalNumeric}${unitLabel}</span><span class="block text-[10px] text-slate-500">1樓:${stats.floor1Numeric} / 3樓:${stats.floor3Numeric}｜${rec.lastUpdatedDate}</span>` : `<span class="text-xs font-bold text-slate-400">未盤點</span>`}
               </div>
             </div>
             <div class="mt-2 flex flex-wrap gap-1.5">${batchesBadges}</div>
+            ${riskySummaryHtml}
           </div>
         `;
       }).join("");
@@ -1613,30 +2159,91 @@
     }
 
     function exportToExcel() {
+      checkAndAutoSyncRealDate();
       if (typeof XLSX === "undefined") {
         alert("Excel 匯出元件載入中，請確認網路連線或稍後再試。");
         return;
       }
-      const detailRows = [], summaryRows = [], historyRows = [];
+
+      const detailRows = [], summaryRows = [], historyRows = [], nearExpiryRows = [];
+      const refDate = appState.workingDate;
 
       appState.drugs.forEach(d => {
         const rec = appState.records[d.id];
+        const unitStr = d.unit || "";
+        const usageVal = d.monthlyUsage !== null ? d.monthlyUsage : "";
+
         if (rec && Array.isArray(rec.batches) && rec.batches.length > 0) {
           const stats = calculateBatchStats(rec.batches);
-          rec.batches.forEach((b, idx) => {
-            detailRows.push({
-              "藥品代碼": d.code, "藥品名稱": d.name, "批次序號": idx + 1,
-              "存放樓層": b.floor || "1樓", "該批數量": b.qty, "效期(4碼)": b.expiry,
-              "單品數字總量(排除文字)": stats.totalNumeric, "最後盤點日期": rec.lastUpdatedDate
-            });
+          const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, refDate);
+
+          evals.forEach((ev, idx) => {
+            const nearStatusStr = ev.isExpired
+              ? `🚨已過期(${Math.abs(ev.daysToExpiry)}天)`
+              : (ev.isNearExpiry ? `⚠️近效期(剩${ev.daysToExpiry}天)` : "正常");
+
+            const evalSummaryForRow = ev.isTextQtyOnlyReminder
+              ? (ev.isAlert ? ev.depletionTextPlain : "數量為「開」不納入庫存與耗用計算（效期正常）")
+              : (ev.isAlert ? ev.depletionTextPlain : "正常效期(無須預警)");
+
+            const rowObj = {
+              "藥品代碼": d.code,
+              "藥品名稱": d.name,
+              "批次序號": idx + 1,
+              "存放樓層": ev.floor,
+              "該批數量": ev.rawQty,
+              "盤點的數量計算單位": unitStr,
+              "效期(4碼)": ev.rawExpiry,
+              "推算末效日": ev.expiryDateStr,
+              "距末效日天數": ev.daysToExpiry !== null ? ev.daysToExpiry : "",
+              "近效期狀態(120天內)": nearStatusStr,
+              "藥品的月消耗量數據": usageVal,
+              "屆效前30天能否使用完畢評估": evalSummaryForRow,
+              "單品數字總量(排除文字)": stats.totalNumeric,
+              "最後盤點日期": rec.lastUpdatedDate
+            };
+            detailRows.push(rowObj);
+
+            if (ev.isAlert) {
+              nearExpiryRows.push({
+                "評估基準日": refDate,
+                "藥品代碼": d.code,
+                "藥品名稱": d.name,
+                "存放樓層": ev.floor,
+                "該批數量": ev.rawQty,
+                "盤點的數量計算單位": unitStr,
+                "效期(4碼)": ev.rawExpiry,
+                "推算末效日": ev.expiryDateStr,
+                "距末效日天數": ev.daysToExpiry,
+                "距屆效前30天可用天數": ev.isTextQtyOnlyReminder ? "" : ev.daysUntil30Before,
+                "藥品的月消耗量數據": ev.isTextQtyOnlyReminder ? "" : usageVal,
+                "屆效前30天最大可消耗量": (!ev.isTextQtyOnlyReminder && ev.usableBefore30Days !== null) ? formatNumSmart(ev.usableBefore30Days) : "",
+                "同效期及更早累計需耗用量": (!ev.isTextQtyOnlyReminder && ev.cumulativeQtyToClear !== null) ? formatNumSmart(ev.cumulativeQtyToClear) : "",
+                "預計耗用完畢所需天數": (!ev.isTextQtyOnlyReminder && ev.daysNeededToClear !== null) ? ev.daysNeededToClear : "",
+                "近效期提醒與屆效前30天耗用結論": ev.depletionTextPlain
+              });
+            }
           });
 
+          const riskyEvals = evals.filter(e => e.isAlert);
+          const nearSummaryStr = riskyEvals.length > 0
+            ? riskyEvals.map(e => `[效期${e.rawExpiry}/剩${e.daysToExpiry}天] ${e.depletionTextPlain}`).join(" ｜ ")
+            : "無近效期批次";
+
           summaryRows.push({
-            "藥品代碼": d.code, "藥品名稱": d.name,
-            "1樓數字總量": stats.floor1Numeric, "3樓數字總量": stats.floor3Numeric,
+            "藥品代碼": d.code,
+            "藥品名稱": d.name,
+            "盤點的數量計算單位": unitStr,
+            "藥品的月消耗量數據": usageVal,
+            "1樓數字總量": stats.floor1Numeric,
+            "3樓數字總量": stats.floor3Numeric,
             "單品數字總量(1樓+3樓)": stats.totalNumeric,
             "開瓶/文字批次紀錄": stats.textNotes.join("、") || "無",
-            "各樓層數量與4碼效期明細": rec.batches.map(b => `[${b.floor || '1樓'}] 數量:${b.qty} (效期:${b.expiry})`).join("； "),
+            "各樓層數量與4碼效期明細": rec.batches.map(b => {
+              const qDisp = isStrictNumericQty(b.qty) ? `${b.qty}${unitStr}` : b.qty;
+              return `[${b.floor || '1樓'}] 數量:${qDisp} (效期:${b.expiry})`;
+            }).join("； "),
+            "近效期(120天內)與屆效前30天耗用評估": nearSummaryStr,
             "最後盤點日期": rec.lastUpdatedDate
           });
 
@@ -1644,18 +2251,32 @@
             const hStats = calculateBatchStats(h.batches);
             (h.batches || []).forEach((hb, hIdx) => {
               historyRows.push({
-                "盤點作業日期": h.date, "儲存時間": h.savedAt || "",
-                "藥品代碼": d.code, "藥品名稱": d.name, "批次序號": hIdx + 1,
-                "存放樓層": hb.floor || "1樓", "該批數量": hb.qty, "效期(4碼)": hb.expiry,
+                "盤點作業日期": h.date,
+                "儲存時間": h.savedAt || "",
+                "藥品代碼": d.code,
+                "藥品名稱": d.name,
+                "批次序號": hIdx + 1,
+                "存放樓層": hb.floor || "1樓",
+                "該批數量": hb.qty,
+                "盤點的數量計算單位": unitStr,
+                "效期(4碼)": hb.expiry,
                 "當時單品數字總量": hStats.totalNumeric
               });
             });
           });
         } else {
           summaryRows.push({
-            "藥品代碼": d.code, "藥品名稱": d.name, "1樓數字總量": "", "3樓數字總量": "",
-            "單品數字總量(1樓+3樓)": "", "開瓶/文字批次紀錄": "",
-            "各樓層數量與4碼效期明細": "尚未盤點", "最後盤點日期": ""
+            "藥品代碼": d.code,
+            "藥品名稱": d.name,
+            "盤點的數量計算單位": unitStr,
+            "藥品的月消耗量數據": usageVal,
+            "1樓數字總量": "",
+            "3樓數字總量": "",
+            "單品數字總量(1樓+3樓)": "",
+            "開瓶/文字批次紀錄": "",
+            "各樓層數量與4碼效期明細": "尚未盤點",
+            "近效期(120天內)與屆效前30天耗用評估": "",
+            "最後盤點日期": ""
           });
         }
       });
@@ -1664,10 +2285,16 @@
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows.length ? detailRows : [{ "說明": "尚無已盤點明細" }]), "1_效期批號明細表");
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "2_單品總量彙總表");
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(historyRows.length ? historyRows : [{ "說明": "尚無歷次修改紀錄" }]), "3_歷次複盤修改紀錄");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(nearExpiryRows.length ? nearExpiryRows : [{ "說明": `以基準日 ${refDate} 評估，目前無 120 天內近效期品項` }]), "4_近效期與耗用預警專表");
 
-      const fileName = `白耳鼻喉科_藥品盤點報表_${appState.workingDate}.xlsx`;
+      const fileName = `白耳鼻喉科_藥品盤點報表_${refDate}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      showToast(`📥 已匯出 Excel：${fileName}`);
+
+      if (nearExpiryRows.length > 0) {
+        showToast(`⚠️ 已匯出報表！注意：共有 ${nearExpiryRows.length} 批近效期品項已列於預警專表`);
+      } else {
+        showToast(`📥 已匯出 Excel：${fileName}`);
+      }
     }
 
     function importDrugMasterExcel(event) {
@@ -1679,26 +2306,51 @@
           const workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array", raw: false });
           const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
           const importedRaw = [], seenIds = new Set();
+
           rows.forEach(row => {
-            const code = String(row["藥品代碼"] || row["藥代"] || row["代碼"] || row["code"] || "").trim();
-            const name = String(row["藥品名稱"] || row["品名"] || row["名稱"] || row["name"] || "").trim();
+            const code = String(row["藥品代碼"] || row["藥代"] || row["代碼"] || row["code"] || row["CODE"] || "").trim();
+            const name = String(row["藥品名稱"] || row["品名"] || row["中文商品名"] || row["名稱"] || row["name"] || "").trim();
+            const unit = String(
+              row["盤點的數量計算單位"] || row["數量計算單位"] || row["計算單位"] || row["盤點單位"] || row["單位"] || row["unit"] || ""
+            ).trim();
+            const usageRaw =
+              row["藥品的月消耗量數據"] !== undefined && row["藥品的月消耗量數據"] !== "" ? row["藥品的月消耗量數據"] :
+              row["月消耗量數據"] !== undefined && row["月消耗量數據"] !== "" ? row["月消耗量數據"] :
+              row["月消耗量"] !== undefined && row["月消耗量"] !== "" ? row["月消耗量"] :
+              row["消耗量"] !== undefined && row["消耗量"] !== "" ? row["消耗量"] :
+              row["monthlyUsage"] !== undefined ? row["monthlyUsage"] : "";
+
             const id = `${code}__${name}`;
             if (code && name && !seenIds.has(id)) {
               seenIds.add(id);
-              importedRaw.push({ id, code, name });
+              importedRaw.push({
+                id,
+                code,
+                name,
+                unit,
+                monthlyUsage: parseMonthlyUsageVal(usageRaw)
+              });
             }
           });
-          if (!importedRaw.length) { alert("請確認 Excel 含「藥品代碼」與「藥品名稱」欄位！"); return; }
+
+          if (!importedRaw.length) {
+            alert("請確認 Excel 第一列標題包含「藥品代碼」與「藥品名稱」（並可包含「盤點的數量計算單位」與「藥品的月消耗量數據」）！");
+            return;
+          }
+
           appState.drugs = importedRaw;
-          currentSelectedId = importedRaw[0].id;
+          if (!appState.drugs.some(d => d.id === currentSelectedId)) {
+            currentSelectedId = importedRaw[0].id;
+          }
           saveState();
+          renderGlobalNearExpiryBanner();
           renderQuickDrugPills();
           selectDrugById(currentSelectedId, true);
           renderOverviewList();
-          showToast(`✅ 成功匯入 ${importedRaw.length} 筆藥品主檔！`);
+          showToast(`✅ 成功匯入 ${importedRaw.length} 筆藥品主檔（含單位與月消耗量，既有盤點紀錄已完整保留）！`);
           switchTab("scan");
         } catch (err) {
-          alert("讀取 Excel 發生錯誤。");
+          alert("讀取 Excel 發生錯誤，請確認檔案格式為 .xlsx 或 .csv。");
         } finally {
           event.target.value = "";
         }
@@ -1706,11 +2358,30 @@
       reader.readAsArrayBuffer(file);
     }
 
+    function download4ColumnMasterTemplate() {
+      if (typeof XLSX === "undefined") {
+        alert("Excel 元件載入中，請稍後再試。");
+        return;
+      }
+      const rows = appState.drugs.map(d => ({
+        "藥品代碼": d.code,
+        "藥品名稱": d.name,
+        "盤點的數量計算單位": d.unit || "",
+        "藥品的月消耗量數據": d.monthlyUsage !== null ? d.monthlyUsage : ""
+      }));
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "白耳鼻喉科藥品主檔(4欄位)");
+      XLSX.writeFile(wb, "白耳鼻喉科_141筆藥品主檔範本_含單位與月消耗量.xlsx");
+      showToast("📄 已下載 4 欄位藥品主檔範本！");
+    }
+
     function restoreBuiltin141Drugs() {
-      if (!confirm("確定要還原為內建的 141 筆藥品清單嗎？（既有盤點紀錄將保留）")) return;
+      if (!confirm("確定要還原為預設的 141 筆藥品清單嗎？（既有盤點紀錄將保留）")) return;
       appState.drugs = [...BUILTIN_DRUGS];
       currentSelectedId = BUILTIN_DRUGS[0].id;
       saveState();
+      renderGlobalNearExpiryBanner();
       renderQuickDrugPills();
       selectDrugById(currentSelectedId, true);
       renderOverviewList();
@@ -1737,7 +2408,6 @@
           if (parsed && Array.isArray(parsed.drugs)) {
             appState = parsed;
             appState.drugs = normalizeDrugList(parsed.drugs);
-            // 還原備份時同樣自動對齊今日實際日期
             appState.workingDate = getTodayDateString();
             saveState();
             initApp();
@@ -1751,9 +2421,10 @@
     }
 
     function clearAllInventoryData() {
-      if (!confirm("確定要清空所有已輸入的盤點紀錄嗎？（141 筆藥品主檔將保留）")) return;
+      if (!confirm("確定要清空所有已輸入的盤點紀錄嗎？（藥品主檔與單位/月消耗量設定將保留）")) return;
       appState.records = {};
       saveState();
+      renderGlobalNearExpiryBanner();
       selectDrugById(currentSelectedId, true);
       renderOverviewList();
       switchTab("scan");
@@ -1776,7 +2447,7 @@
       box.textContent = msg;
       box.classList.remove("hidden");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => box.classList.add("hidden"), 2600);
+      toastTimer = setTimeout(() => box.classList.add("hidden"), 2800);
     }
 
     function escapeHtml(str) {
