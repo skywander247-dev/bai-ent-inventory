@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="白耳盤點系統" />
-  <title>白耳鼻喉科｜行動藥品盤點系統 v5.2</title>
+  <title>白耳鼻喉科｜行動藥品盤點系統 v5.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -40,7 +40,7 @@
         <div class="flex items-center gap-1.5">
           <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider">ENT</span>
           <h1 class="text-base sm:text-lg font-bold tracking-tight">白耳鼻喉科｜藥品盤點</h1>
-          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v5.2</span>
+          <span class="bg-amber-400 text-slate-950 font-mono text-xs font-black px-1.5 py-0.5 rounded shadow">v5.3</span>
         </div>
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="forceHardReload()" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 shadow transition">
@@ -131,7 +131,7 @@
         <div id="voiceStatusBar" class="mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-1.5">
             <span id="voiceStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0"></span>
-            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v5.2 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
+            <span id="voiceStatusText" class="font-bold text-slate-600 leading-snug">[v5.3 語音待命] 可點上方「🎤 開始語音搜藥」，或直接點下方數量/效期格內的「🎤」念單一數字！</span>
           </div>
         </div>
 
@@ -201,7 +201,7 @@
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
         <h2 class="text-base font-bold text-slate-800">📊 匯出盤點 Excel 報表 (.xlsx)</h2>
         <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-          包含 4 個工作表：<strong>1_效期批號明細表</strong>（含單位、月消耗量、120天近效期與屆效前30天耗用評估；若數量為「開」則僅提醒近效期）、<strong>2_單品總量彙總表</strong>、<strong>3_歷次複盤修改紀錄</strong>、以及 <strong>4_近效期與耗用預警專表</strong>。
+          包含 4 個工作表：<strong>1_效期批號明細表</strong>（含各批獨立最後盤點日、單位、月消耗量、120天近效期與屆效前30天耗用評估）、<strong>2_單品總量彙總表</strong>、<strong>3_歷次複盤修改紀錄</strong>、以及 <strong>4_近效期與耗用預警專表</strong>。
         </p>
         <button type="button" onclick="exportToExcel()" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-2 text-sm transition">
           <span>📥 立即下載 Excel 盤點報表 (.xlsx)</span>
@@ -455,6 +455,7 @@
     };
 
     let currentSelectedId = "AM5__安蒙西林500";
+    // editingBatches 內含：{ floor, qty, expiry, lastUpdatedDate, isSaved, isDirty, savedSnapshot }
     let editingBatches = [];
     let currentListFilter = "ALL";
     let isGlobalAlertExpanded = false;
@@ -479,9 +480,24 @@
       }
     }
 
+    // 計算某藥品各批次的最新盤點日與不重複盤點日清單
+    function getDrugDatesSummary(rec) {
+      if (!rec || !Array.isArray(rec.batches) || rec.batches.length === 0) {
+        return { latestDate: "", uniqueDates: [], displayStr: "" };
+      }
+      const dates = rec.batches
+        .map(b => b.lastUpdatedDate || rec.lastUpdatedDate || "")
+        .filter(Boolean);
+      const uniqueDates = Array.from(new Set(dates)).sort();
+      const latestDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : (rec.lastUpdatedDate || "");
+      const displayStr = uniqueDates.length > 1
+        ? `${latestDate} (含 ${uniqueDates.join("、")})`
+        : latestDate;
+      return { latestDate, uniqueDates, displayStr };
+    }
+
     // =========================================================================
     // 2. 近效期 (120天內) 推算與「屆效前30天能否使用完畢」核心精算引擎
-    //    （數量為「開」等非數字批次：不納入庫存與耗用計算，僅單純提醒近效期）
     // =========================================================================
     function parse4DigitExpiryToEndOfMonth(expStr) {
       const clean = String(expStr ?? "").trim();
@@ -510,7 +526,7 @@
       return Number(Math.round(Number(val + "e" + maxDec)) + "e-" + maxDec).toString();
     }
 
-    function evaluateDrugBatchesExpiryAndDepletion(drug, batches, refDateStr) {
+    function evaluateDrugBatchesExpiryAndDepletion(drug, batches, refDateStr, fallbackDrugDate = "") {
       const refUtcMs = parseDateStrToUtcMs(refDateStr || appState.workingDate);
       const unitStr = drug?.unit ? drug.unit : "";
       const monthlyUsage = parseMonthlyUsageVal(drug?.monthlyUsage);
@@ -521,11 +537,13 @@
         const isNum = isStrictNumericQty(rawQty);
         const numQty = isNum ? parseFloat(rawQty) : 0;
         const daysToExpiry = expInfo ? Math.round((expInfo.utcMs - refUtcMs) / 86400000) : null;
+        const batchDate = String(b.lastUpdatedDate || fallbackDrugDate || "").trim();
         return {
           index: idx,
           floor: b.floor === "3樓" ? "3樓" : "1樓",
           rawQty,
           rawExpiry: String(b.expiry ?? "").trim(),
+          batchDate,
           isNum,
           numQty,
           expInfo,
@@ -557,7 +575,6 @@
         const isNearExpiry = daysToExp >= 0 && daysToExp <= 120;
         const isAlert = isExpired || isNearExpiry;
 
-        // 若該批數量為「開」（或非數字文字），不納入庫存與耗用計算，僅單純提醒近效期或過期
         if (!item.isNum) {
           let textPlain = "";
           let badgeHtml = "";
@@ -587,7 +604,6 @@
           };
         }
 
-        // 純數字數量批次：計算同效期及更早效期之累計需耗用庫存（自動忽略所有「開」的批次）
         let cumulativeQtyToClear = 0;
         parsedMeta.forEach(other => {
           if (other.expInfo && other.isNum && other.expInfo.utcMs <= item.expInfo.utcMs) {
@@ -668,7 +684,7 @@
       appState.drugs.forEach(d => {
         const rec = appState.records[d.id];
         if (!rec || !Array.isArray(rec.batches) || rec.batches.length === 0) return;
-        const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, targetDate);
+        const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, targetDate, rec.lastUpdatedDate);
         const riskyBatches = evals.filter(e => e.isAlert);
         if (riskyBatches.length > 0) {
           alertItems.push({
@@ -737,6 +753,7 @@
                 <span class="px-1.5 py-0.2 rounded bg-slate-200 text-slate-800 text-[10px]">${escapeHtml(rb.floor)}</span>
                 <span>效期: <strong class="font-mono text-indigo-800">${escapeHtml(rb.rawExpiry)}</strong></span>
                 <span>數量: <strong class="text-rose-700">${qtyDisplay}</strong></span>
+                ${rb.batchDate ? `<span class="text-[10px] text-slate-500">(盤點日:${escapeHtml(rb.batchDate)})</span>` : ""}
                 ${dayBadge}
               </div>
               <div class="mt-0.5">${rb.depletionBadgeHtml}</div>
@@ -789,7 +806,7 @@
     }
 
     // =========================================================================
-    // 3. 初始化、資料持久化與「內建 4 欄位主檔自動同步合併」機制
+    // 3. 初始化、資料持久化與「各批號獨立盤點日向下相容遷移」機制
     // =========================================================================
     function initApp() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -802,7 +819,6 @@
           appState.workingDate = todayStr;
           appState.defaultFloor = parsed.defaultFloor === "3樓" ? "3樓" : "1樓";
 
-          // 關鍵升級：讀取舊快取時，自動將 v5.2 內建的 141 筆「單位 (unit)」與「月消耗量 (monthlyUsage)」同步補齊！
           if (Array.isArray(parsed.drugs) && parsed.drugs.length > 0) {
             const normalizedSaved = normalizeDrugList(parsed.drugs);
             appState.drugs = normalizedSaved.map(d => {
@@ -821,6 +837,22 @@
           }
 
           appState.records = parsed.records || {};
+          // 向下相容：確保既有紀錄中的每一批次都具備專屬的 lastUpdatedDate
+          Object.keys(appState.records).forEach(drugId => {
+            const rec = appState.records[drugId];
+            if (rec && Array.isArray(rec.batches)) {
+              const fallbackDate = rec.lastUpdatedDate || todayStr;
+              rec.batches = rec.batches.map(b => ({
+                floor: b.floor === "3樓" ? "3樓" : "1樓",
+                qty: String(b.qty ?? "").trim(),
+                expiry: String(b.expiry ?? "").trim(),
+                lastUpdatedDate: String(b.lastUpdatedDate || fallbackDate).trim()
+              }));
+              const summary = getDrugDatesSummary(rec);
+              if (summary.latestDate) rec.lastUpdatedDate = summary.latestDate;
+            }
+          });
+
           appState.recentIds = Array.isArray(parsed.recentIds) ? parsed.recentIds : ["AM5__安蒙西林500", "COM__康保西林", "AU6__必百欣625", "AU6__諾快寧625"];
           if (parsed.lastSelectedId) {
             currentSelectedId = parsed.lastSelectedId;
@@ -935,7 +967,7 @@
     }
 
     // =========================================================================
-    // 5. v5.2 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
+    // 5. v5.3 常駐熱機語音引擎（支援：藥名搜尋 ＋ 數量單一數字語音 ＋ 效期單一數字語音）
     // =========================================================================
     let sharedRecognition = null;
     let isHardwareMicStreamOpen = false;
@@ -1106,7 +1138,7 @@
         statusBar.className = "mt-2 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex items-center justify-between gap-2";
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block shrink-0";
         statusText.className = "font-bold text-slate-600 leading-snug";
-        statusText.textContent = message || "[v5.2 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
+        statusText.textContent = message || "[v5.3 語音待命] 可點「🎤 開始語音搜藥」，或點下方數量/效期格內的「🎤」念單一數字！";
       }
       refreshFieldMicButtonsUI();
     }
@@ -1396,7 +1428,7 @@
           onBatchExpiryInput(targetIdx, digits);
           updateVoiceControlUI(
             "DONE",
-            `✅ 批次 #${targetIdx + 1}【效期】已填入：${digits}（確認無誤可點下方「💾 儲存」）`
+            `✅ 批次 #${targetIdx + 1}【效期】已填入：${digits}（請點該批下方的「💾 儲存批次 #${targetIdx + 1}」！）`
           );
           showToast(`📅 效期已填入：${digits}`);
         } else {
@@ -1450,7 +1482,7 @@
         const hasRecord = rec && rec.batches && rec.batches.length > 0;
         let hasNearExpiry = false;
         if (hasRecord) {
-          const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, appState.workingDate);
+          const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, appState.workingDate, rec.lastUpdatedDate);
           hasNearExpiry = evals.some(e => e.isAlert);
         }
 
@@ -1502,6 +1534,7 @@
       dropdown.innerHTML = list.slice(0, 25).map(d => {
         const rec = appState.records[d.id];
         const stats = rec ? calculateBatchStats(rec.batches) : null;
+        const dateSum = rec ? getDrugDatesSummary(rec) : null;
         const unitLabel = d.unit ? ` ${escapeHtml(d.unit)}` : "";
         const isCurrent = d.id === currentSelectedId;
         return `
@@ -1517,7 +1550,7 @@
             </div>
             <div class="text-right">
               ${rec && rec.batches && rec.batches.length > 0
-                ? `<span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">已盤 (${rec.lastUpdatedDate})｜總量 ${stats.totalNumeric}${unitLabel}</span>`
+                ? `<span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">已盤 (${escapeHtml(dateSum.latestDate)})｜總量 ${stats.totalNumeric}${unitLabel}</span>`
                 : `<span class="text-[11px] text-slate-400">尚未盤點</span>`}
             </div>
           </button>
@@ -1576,7 +1609,7 @@
     }
 
     // =========================================================================
-    // 7. 選中藥品並渲染專屬盤點卡（含單位、月消耗量、近效期120天提醒與屆效前30天耗用分析）
+    // 7. 選中藥品並渲染專屬盤點卡（v5.3 各批號獨立儲存按鈕 ＋ 各批獨立最後盤點日）
     // =========================================================================
     function selectDrugById(id, closeDropdown = true) {
       const drug = appState.drugs.find(d => d.id === id);
@@ -1591,13 +1624,32 @@
 
       const existingRecord = appState.records[drug.id];
       if (existingRecord && Array.isArray(existingRecord.batches) && existingRecord.batches.length > 0) {
-        editingBatches = existingRecord.batches.map(b => ({
-          floor: b.floor === "3樓" ? "3樓" : "1樓",
-          qty: String(b.qty ?? ""),
-          expiry: String(b.expiry ?? "")
-        }));
+        const fallbackDate = existingRecord.lastUpdatedDate || "";
+        editingBatches = existingRecord.batches.map(b => {
+          const fl = b.floor === "3樓" ? "3樓" : "1樓";
+          const q = String(b.qty ?? "").trim();
+          const exp = String(b.expiry ?? "").trim();
+          const bDate = String(b.lastUpdatedDate || fallbackDate).trim();
+          return {
+            floor: fl,
+            qty: q,
+            expiry: exp,
+            lastUpdatedDate: bDate,
+            isSaved: true,
+            isDirty: false,
+            savedSnapshot: { floor: fl, qty: q, expiry: exp, lastUpdatedDate: bDate }
+          };
+        });
       } else {
-        editingBatches = [{ floor: appState.defaultFloor, qty: "", expiry: "" }];
+        editingBatches = [{
+          floor: appState.defaultFloor,
+          qty: "",
+          expiry: "",
+          lastUpdatedDate: "",
+          isSaved: false,
+          isDirty: false,
+          savedSnapshot: null
+        }];
       }
 
       renderQuickDrugPills();
@@ -1709,16 +1761,21 @@
         `;
       }
 
+      // 已儲存批次總覽橫幅（顯示每一批各自的最後盤點日！）
       let previousReviewBanner = "";
-      if (rec && rec.lastUpdatedDate) {
+      if (rec && Array.isArray(rec.batches) && rec.batches.length > 0) {
         const prevStats = calculateBatchStats(rec.batches);
-        const prevEvals = evaluateDrugBatchesExpiryAndDepletion(drug, rec.batches, appState.workingDate);
-        const isDifferentDay = rec.lastUpdatedDate !== appState.workingDate;
+        const prevEvals = evaluateDrugBatchesExpiryAndDepletion(drug, rec.batches, appState.workingDate, rec.lastUpdatedDate);
+        const hasAnyOldBatch = prevEvals.some(pe => pe.batchDate !== appState.workingDate);
 
-        const batchSummaryBadges = prevEvals.map(pe => {
+        const batchSummaryBadges = prevEvals.map((pe, bIdx) => {
           const flColor = pe.floor === "3樓" ? "bg-sky-200 text-sky-950" : "bg-emerald-200 text-emerald-950";
           const alertBorder = pe.isAlert ? "border-2 border-rose-500 bg-rose-50/60" : "border border-amber-300 bg-white";
           const qtyDisp = pe.isNum ? `${escapeHtml(pe.rawQty)}${unitWithSpace}` : `${escapeHtml(pe.rawQty)}`;
+          const isCountedToday = pe.batchDate === appState.workingDate;
+          const dateBadgeStyle = isCountedToday
+            ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+            : "bg-amber-200/80 text-amber-950 border border-amber-400";
 
           let expWarnTag = "";
           if (pe.isExpired) {
@@ -1732,38 +1789,71 @@
             }
           }
 
-          return `<span class="inline-flex flex-wrap items-center gap-1 ${alertBorder} px-2 py-0.5 rounded-md text-xs font-bold text-slate-800">
+          return `<span class="inline-flex flex-wrap items-center gap-1 ${alertBorder} px-2 py-1 rounded-lg text-xs font-bold text-slate-800">
+            <span class="text-[10px] font-black text-slate-500">#${bIdx + 1}</span>
             <span class="px-1.5 py-0.2 rounded text-[11px] font-black ${flColor}">${escapeHtml(pe.floor)}</span>
             <span>數量: <strong class="text-rose-700">${qtyDisp}</strong></span>
-            <span class="text-slate-400">|</span>
+            <span class="text-slate-300">|</span>
             <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(pe.rawExpiry)}</strong></span>
+            <span class="px-1.5 py-0.2 rounded text-[10px] font-black ${dateBadgeStyle}">📅 盤點日: ${escapeHtml(pe.batchDate || '未記錄')}${isCountedToday ? ' ✓' : ''}</span>
             ${expWarnTag}
           </span>`;
-        }).join(" ");
+        }).join("");
 
         previousReviewBanner = `
-          <div class="mb-2.5 rounded-xl border-2 ${isDifferentDay ? 'bg-amber-50 border-amber-400' : 'bg-emerald-50 border-emerald-300'} p-2.5">
+          <div class="mb-2.5 rounded-xl border-2 ${hasAnyOldBatch ? 'bg-amber-50 border-amber-400' : 'bg-emerald-50 border-emerald-300'} p-2.5">
             <div class="flex flex-wrap items-center justify-between gap-1">
-              <div class="text-xs font-black ${isDifferentDay ? 'text-amber-900' : 'text-emerald-900'} flex items-center gap-1">
-                <span>📌 上次盤點日：${escapeHtml(rec.lastUpdatedDate)}</span>
-                ${isDifferentDay ? `<span class="bg-amber-300 text-amber-950 px-1.5 py-0.5 rounded text-[10px]">跨日複盤 (${escapeHtml(appState.workingDate)})</span>` : `<span class="bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded text-[10px]">當日已盤點</span>`}
+              <div class="text-xs font-black ${hasAnyOldBatch ? 'text-amber-900' : 'text-emerald-900'} flex items-center gap-1">
+                <span>📌 已存各批盤點紀錄</span>
+                ${hasAnyOldBatch
+                  ? `<span class="bg-amber-300 text-amber-950 px-1.5 py-0.5 rounded text-[10px]">跨日複盤模式 (今日 ${escapeHtml(appState.workingDate)})</span>`
+                  : `<span class="bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded text-[10px]">全數批次今日已盤 ✓</span>`}
               </div>
               <div class="text-xs font-bold text-slate-700">
-                上次總量：<span class="font-black text-sm text-slate-900">${prevStats.totalNumeric}${unitWithSpace}</span>
+                已存總量：<span class="font-black text-sm text-slate-900">${prevStats.totalNumeric}${unitWithSpace}</span>
                 <span class="text-[11px] text-slate-500">（1樓:${prevStats.floor1Numeric}/3樓:${prevStats.floor3Numeric}）</span>
               </div>
             </div>
-            <div class="mt-1.5 flex flex-wrap gap-1.5">${batchSummaryBadges}</div>
+            <div class="mt-1.5 flex flex-col gap-1.5">${batchSummaryBadges}</div>
           </div>
         `;
       }
 
       const liveEvals = evaluateDrugBatchesExpiryAndDepletion(drug, editingBatches, appState.workingDate);
 
+      // 各批次獨立卡片與各自專屬的「💾 儲存批次 #N」按鈕
       const batchRowsHtml = editingBatches.map((batch, index) => {
         const isFloor1 = batch.floor !== "3樓";
         const isQtyText = batch.qty.trim() !== "" && !isStrictNumericQty(batch.qty);
         const ev = liveEvals[index];
+        const bDate = batch.lastUpdatedDate || "";
+        const isCountedToday = batch.isSaved && !batch.isDirty && bDate === appState.workingDate;
+
+        // 批次右上角狀態標籤
+        let batchDateBadgeHtml = "";
+        if (!batch.isSaved) {
+          batchDateBadgeHtml = `<span id="batchDateBadge-${index}" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">🆕 新批次未儲存</span>`;
+        } else if (batch.isDirty) {
+          batchDateBadgeHtml = `<span id="batchDateBadge-${index}" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-300">✏️ 修改未存 (原盤點日:${escapeHtml(bDate)})</span>`;
+        } else if (isCountedToday) {
+          batchDateBadgeHtml = `<span id="batchDateBadge-${index}" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">📅 盤點日: ${escapeHtml(bDate)} ✓</span>`;
+        } else {
+          batchDateBadgeHtml = `<span id="batchDateBadge-${index}" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-200 text-amber-950 border border-amber-400">📅 上次盤點: ${escapeHtml(bDate)}</span>`;
+        }
+
+        // 批次專屬儲存按鈕樣式與文字
+        let saveBtnClass = "w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition ";
+        let saveBtnLabel = "";
+        if (batch.isDirty || !batch.isSaved) {
+          saveBtnClass += "bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white";
+          saveBtnLabel = `💾 儲存批次 #${index + 1} 修改（盤點日更新為 ${escapeHtml(appState.workingDate)}）`;
+        } else if (isCountedToday) {
+          saveBtnClass += "bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white";
+          saveBtnLabel = `💾 儲存批次 #${index + 1}（今日 ${escapeHtml(appState.workingDate)} 已盤點 ✓ 點此可再次確認）`;
+        } else {
+          saveBtnClass += "bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white";
+          saveBtnLabel = `💾 儲存批次 #${index + 1}（無異動確認／盤點日更新為 ${escapeHtml(appState.workingDate)}）`;
+        }
 
         let expSubHintHtml = `<div id="expHint-${index}" class="mt-1 text-[10px] leading-tight text-slate-400 text-center">點🎤念4碼(如:二八零四)</div>`;
         if (ev && ev.expInfo) {
@@ -1776,9 +1866,12 @@
           }
         }
 
+        const showDeleteBtn = editingBatches.length > 1 || batch.isSaved;
+
         return `
-          <div class="bg-slate-50 border-2 ${ev && ev.isAlert ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200'} rounded-xl p-2.5 relative transition">
-            <div class="flex items-center justify-between gap-1.5 mb-2">
+          <div class="bg-slate-50 border-2 ${ev && ev.isAlert ? 'border-rose-400 bg-rose-50/30' : (batch.isDirty ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200')} rounded-xl p-2.5 relative transition">
+            <!-- 批次頂部列：編號、1樓/3樓、該批最後盤點日、刪除鈕 -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5 mb-2">
               <div class="flex items-center gap-1.5">
                 <span class="bg-slate-800 text-white text-xs font-black px-2 py-0.5 rounded-md">批次 #${index + 1}</span>
                 <div class="inline-flex rounded-lg bg-slate-200 p-0.5 border border-slate-300">
@@ -1786,11 +1879,15 @@
                   <button type="button" onclick="updateBatchFloor(${index}, '3樓')" class="px-2.5 py-0.5 rounded-md text-xs font-black transition ${!isFloor1 ? 'bg-sky-600 text-white shadow' : 'text-slate-600'}">3樓</button>
                 </div>
               </div>
-              ${editingBatches.length > 1 ? `<button type="button" onclick="removeBatchRow(${index})" class="text-rose-600 hover:bg-rose-100 px-2 py-0.5 rounded-lg text-xs font-bold">✕ 刪除</button>` : ''}
+              <div class="flex items-center gap-1">
+                ${batchDateBadgeHtml}
+                ${showDeleteBtn ? `<button type="button" onclick="removeBatchRow(${index})" class="text-rose-600 hover:bg-rose-100 px-1.5 py-0.5 rounded-lg text-xs font-bold">✕ 刪除</button>` : ''}
+              </div>
             </div>
 
+            <!-- 數量與效期雙欄輸入 -->
             <div class="grid grid-cols-2 gap-2 items-start">
-              <!-- 左欄：數量 (呈現計算單位 + 支援手打、填入「開」、內嵌🎤念單一數字) -->
+              <!-- 左欄：數量 -->
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-xs font-bold text-slate-700">數量 ${unitStr ? `<span class="text-indigo-700 font-black">(${escapeHtml(unitStr)})</span>` : ''}</label>
@@ -1818,7 +1915,7 @@
                 </div>
               </div>
 
-              <!-- 右欄：效期 4碼 (支援手打、內嵌🎤念單一數字、即時推算末效日) -->
+              <!-- 右欄：效期 4碼 -->
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-xs font-bold text-slate-700">效期 <span class="text-[10px] font-normal text-slate-500">(4碼)</span></label>
@@ -1832,7 +1929,7 @@
                     id="expiryInput-${index}"
                     value="${escapeHtml(batch.expiry)}"
                     oninput="onBatchExpiryInput(${index}, this.value)"
-                    placeholder="如 2703"
+                    placeholder="如 2710"
                     class="w-full pl-2.5 pr-10 py-2 bg-white border-2 ${ev && ev.isAlert ? 'border-rose-500 text-rose-900 bg-rose-50/40' : 'border-slate-300 text-indigo-900'} focus:border-indigo-600 rounded-xl text-base font-mono font-black tracking-wider text-center"
                   />
                   <button
@@ -1846,6 +1943,18 @@
                 ${expSubHintHtml}
               </div>
             </div>
+
+            <!-- 該批次專屬獨立儲存按鈕 -->
+            <div class="mt-2.5 pt-2 border-t border-slate-200/80">
+              <button
+                type="button"
+                id="saveBatchBtn-${index}"
+                onclick="saveSingleBatch(${index})"
+                class="${saveBtnClass}"
+              >
+                <span id="saveBatchBtnText-${index}">${saveBtnLabel}</span>
+              </button>
+            </div>
           </div>
         `;
       }).join("");
@@ -1857,14 +1966,16 @@
           <div class="mt-2 space-y-1.5 divide-y divide-slate-200">
             ${historyList.slice().reverse().map(h => {
               const st = calculateBatchStats(h.batches);
-              const detailStr = h.batches.map(b => {
+              const detailStr = h.batches.map((b, idx) => {
                 const qDisp = isStrictNumericQty(b.qty) ? `${b.qty}${unitStr}` : b.qty;
-                return `[${b.floor || '1樓'}] 數量:${qDisp} / 效期:${b.expiry}`;
+                const bd = b.lastUpdatedDate || h.date || "";
+                return `[#${idx + 1} ${b.floor || '1樓'}] 數量:${qDisp} / 效期:${b.expiry} (盤點日:${bd})`;
               }).join("；");
               return `
                 <div class="pt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <div>
                     <span class="font-black text-slate-900">${escapeHtml(h.date)}</span>
+                    ${h.actionNote ? `<span class="bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded text-[10px] font-bold ml-1">${escapeHtml(h.actionNote)}</span>` : ""}
                     <span class="text-[11px] text-slate-400 ml-1">(${escapeHtml(h.savedAt || '')})</span>
                     <div class="text-slate-700 mt-0.5">${escapeHtml(detailStr)}</div>
                   </div>
@@ -1919,19 +2030,15 @@
           <!-- 單品即時近效期 (120天內) 與屆效前30天耗用預警容器 -->
           <div id="liveDrugNearExpiryContainer">${liveNearExpiryHtml}</div>
 
-          <div class="space-y-2" id="batchRowsContainer">${batchRowsHtml}</div>
+          <!-- 各批次卡片列表（每批皆有獨立儲存按鈕） -->
+          <div class="space-y-2.5" id="batchRowsContainer">${batchRowsHtml}</div>
 
           <div class="mt-2.5">
-            <button type="button" onclick="addBatchRow()" class="w-full py-2 px-3 rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-700 font-bold text-xs bg-slate-50">
+            <button type="button" onclick="addBatchRow()" class="w-full py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-700 font-bold text-xs bg-slate-50 hover:bg-slate-100 transition">
               ＋ 新增另一組效期 / 樓層批次（預設帶入 <strong class="text-slate-900">${escapeHtml(appState.defaultFloor)}</strong>）
             </button>
           </div>
 
-          <div class="mt-2.5 pt-2.5 border-t border-slate-200">
-            <button type="button" onclick="saveCurrentDrugInventory()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black py-3 px-4 rounded-xl shadow-md text-base transition">
-              💾 儲存「${escapeHtml(drug.name)} (${escapeHtml(drug.code)})」盤點資料
-            </button>
-          </div>
           ${historyHtml}
         </div>
       `;
@@ -1940,17 +2047,74 @@
     }
 
     // =========================================================================
-    // 8. 批次欄位互動與儲存
+    // 8. 批次欄位互動與「單一批次獨立儲存（saveSingleBatch）」核心邏輯
     // =========================================================================
+    function checkBatchDirtyState(index) {
+      const b = editingBatches[index];
+      if (!b) return;
+      if (!b.isSaved || !b.savedSnapshot) {
+        b.isDirty = true;
+      } else {
+        b.isDirty = (
+          b.floor !== b.savedSnapshot.floor ||
+          String(b.qty ?? "").trim() !== String(b.savedSnapshot.qty ?? "").trim() ||
+          String(b.expiry ?? "").trim() !== String(b.savedSnapshot.expiry ?? "").trim()
+        );
+      }
+      updateBatchSaveButtonUI(index);
+    }
+
+    function updateBatchSaveButtonUI(index) {
+      const b = editingBatches[index];
+      if (!b) return;
+      const btn = document.getElementById(`saveBatchBtn-${index}`);
+      const btnText = document.getElementById(`saveBatchBtnText-${index}`);
+      const badge = document.getElementById(`batchDateBadge-${index}`);
+      const bDate = b.lastUpdatedDate || "";
+      const isCountedToday = b.isSaved && !b.isDirty && bDate === appState.workingDate;
+
+      if (badge) {
+        if (!b.isSaved) {
+          badge.className = "px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300";
+          badge.textContent = "🆕 新批次未儲存";
+        } else if (b.isDirty) {
+          badge.className = "px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-300";
+          badge.textContent = `✏️ 修改未存 (原盤點日:${bDate})`;
+        } else if (isCountedToday) {
+          badge.className = "px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300";
+          badge.textContent = `📅 盤點日: ${bDate} ✓`;
+        } else {
+          badge.className = "px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-200 text-amber-950 border border-amber-400";
+          badge.textContent = `📅 上次盤點: ${bDate}`;
+        }
+      }
+
+      if (btn && btnText) {
+        if (b.isDirty || !b.isSaved) {
+          btn.className = "w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white";
+          btnText.textContent = `💾 儲存批次 #${index + 1} 修改（盤點日更新為 ${appState.workingDate}）`;
+        } else if (isCountedToday) {
+          btn.className = "w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white";
+          btnText.textContent = `💾 儲存批次 #${index + 1}（今日 ${appState.workingDate} 已盤點 ✓ 點此可再次確認）`;
+        } else {
+          btn.className = "w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white";
+          btnText.textContent = `💾 儲存批次 #${index + 1}（無異動確認／盤點日更新為 ${appState.workingDate}）`;
+        }
+      }
+    }
+
     function updateBatchFloor(index, floor) {
       if (!editingBatches[index]) return;
       editingBatches[index].floor = floor;
+      checkBatchDirtyState(index);
       renderActiveDrugCard(currentSelectedId);
     }
 
     function onBatchQtyInput(index, val) {
       if (!editingBatches[index]) return;
       editingBatches[index].qty = val;
+      checkBatchDirtyState(index);
+
       const drug = appState.drugs.find(d => d.id === currentSelectedId);
       const unitStr = drug?.unit || "";
       const isQtyText = val.trim() !== "" && !isStrictNumericQty(val);
@@ -1972,6 +2136,7 @@
         updateVoiceControlUI("IDLE", "已填入「開」（可點右側效期格內的 🎤 念4碼效期）");
       }
       editingBatches[index].qty = "開";
+      checkBatchDirtyState(index);
       renderActiveDrugCard(currentSelectedId);
       setTimeout(() => {
         const expEl = document.getElementById(`expiryInput-${index}`);
@@ -1982,6 +2147,7 @@
     function onBatchExpiryInput(index, val) {
       if (!editingBatches[index]) return;
       editingBatches[index].expiry = val.trim();
+      checkBatchDirtyState(index);
 
       const drug = appState.drugs.find(d => d.id === currentSelectedId);
       const evals = evaluateDrugBatchesExpiryAndDepletion(drug, editingBatches, appState.workingDate);
@@ -2040,38 +2206,72 @@
     function addBatchRow() {
       isListeningWindowOpen = false;
       consumedRawTranscript = fullRawTranscript;
-      editingBatches.push({ floor: appState.defaultFloor, qty: "", expiry: "" });
+      editingBatches.push({
+        floor: appState.defaultFloor,
+        qty: "",
+        expiry: "",
+        lastUpdatedDate: "",
+        isSaved: false,
+        isDirty: false,
+        savedSnapshot: null
+      });
       renderActiveDrugCard(currentSelectedId);
     }
 
+    // 刪除單一批次：若該批已存檔，詢問確認後同步寫入資料庫（不影響其他批次的最後盤點日）
     function removeBatchRow(index) {
-      if (editingBatches.length <= 1) return;
-      isListeningWindowOpen = false;
-      consumedRawTranscript = fullRawTranscript;
-      editingBatches.splice(index, 1);
-      renderActiveDrugCard(currentSelectedId);
-    }
-
-    function saveCurrentDrugInventory() {
-      checkAndAutoSyncRealDate();
+      const target = editingBatches[index];
+      if (!target) return;
       const drug = appState.drugs.find(d => d.id === currentSelectedId);
-      if (!drug) return;
 
-      const validBatches = editingBatches
-        .map(b => ({
-          floor: b.floor === "3樓" ? "3樓" : "1樓",
-          qty: String(b.qty ?? "").trim(),
-          expiry: String(b.expiry ?? "").trim()
-        }))
-        .filter(b => b.qty !== "" || b.expiry !== "");
-
-      if (validBatches.length === 0) {
-        showToast("⚠️ 請至少填寫一筆數量或效期後再儲存！");
-        return;
+      if (target.isSaved) {
+        if (!confirm(`確定要刪除「批次 #${index + 1}（${target.floor}｜數量:${target.qty}｜效期:${target.expiry}）」嗎？\n（其他批次的盤點資料與盤點日期將完整保留）`)) {
+          return;
+        }
       }
 
-      const non4Digit = validBatches.find(b => b.expiry !== "" && !/^\d{4}$/.test(b.expiry));
-      if (non4Digit && !confirm(`您輸入的效期「${non4Digit.expiry}」不是 4 碼純數字（如 2612、2703），確定要原樣儲存嗎？`)) {
+      isListeningWindowOpen = false;
+      consumedRawTranscript = fullRawTranscript;
+
+      if (editingBatches.length <= 1) {
+        editingBatches = [{
+          floor: appState.defaultFloor,
+          qty: "",
+          expiry: "",
+          lastUpdatedDate: "",
+          isSaved: false,
+          isDirty: false,
+          savedSnapshot: null
+        }];
+      } else {
+        editingBatches.splice(index, 1);
+      }
+
+      if (target.isSaved && drug) {
+        persistSavedBatchesToRecord(drug, `刪除批次 #${index + 1}`);
+        showToast(`🗑️ 已刪除「${drug.name}」批次 #${index + 1}`);
+      }
+
+      renderGlobalNearExpiryBanner();
+      renderQuickDrugPills();
+      renderActiveDrugCard(currentSelectedId);
+      renderOverviewList();
+    }
+
+    // 將目前已確認儲存的批次寫入 appState.records[drug.id]，完整保留其他批次各自的 lastUpdatedDate
+    function persistSavedBatchesToRecord(drug, actionNote) {
+      const committedBatches = editingBatches
+        .filter(b => b.isSaved && b.savedSnapshot)
+        .map(b => ({
+          floor: b.savedSnapshot.floor,
+          qty: b.savedSnapshot.qty,
+          expiry: b.savedSnapshot.expiry,
+          lastUpdatedDate: b.savedSnapshot.lastUpdatedDate
+        }));
+
+      if (committedBatches.length === 0) {
+        delete appState.records[drug.id];
+        saveState();
         return;
       }
 
@@ -2083,49 +2283,87 @@
       updatedHistory.push({
         date: appState.workingDate,
         savedAt: timeStr,
-        batches: validBatches.map(b => ({ ...b }))
+        actionNote: actionNote || "",
+        batches: committedBatches.map(b => ({ ...b }))
       });
 
+      const uniqueDates = Array.from(new Set(committedBatches.map(b => b.lastUpdatedDate).filter(Boolean))).sort();
+      const latestDrugDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : appState.workingDate;
+
       appState.records[drug.id] = {
-        lastUpdatedDate: appState.workingDate,
-        batches: validBatches.map(b => ({ ...b })),
+        lastUpdatedDate: latestDrugDate,
+        batches: committedBatches,
         history: updatedHistory
       };
 
-      editingBatches = validBatches.map(b => ({ ...b }));
       saveState();
+    }
 
+    // 【v5.3 核心功能】：儲存單一批號（僅更新該批號的最後盤點日為 workingDate，即使數量無異動亦會更新該批盤點日）
+    function saveSingleBatch(index) {
+      checkAndAutoSyncRealDate();
+      const drug = appState.drugs.find(d => d.id === currentSelectedId);
+      const batch = editingBatches[index];
+      if (!drug || !batch) return;
+
+      const cleanFloor = batch.floor === "3樓" ? "3樓" : "1樓";
+      const cleanQty = String(batch.qty ?? "").trim();
+      const cleanExpiry = String(batch.expiry ?? "").trim();
+
+      if (cleanQty === "" && cleanExpiry === "") {
+        showToast(`⚠️ 請先填寫「批次 #${index + 1}」的數量或效期後再儲存！`);
+        return;
+      }
+
+      if (cleanExpiry !== "" && !/^\d{4}$/.test(cleanExpiry)) {
+        if (!confirm(`批次 #${index + 1} 輸入的效期「${cleanExpiry}」不是 4 碼純數字（如 2612、2710），確定要原樣儲存嗎？`)) {
+          return;
+        }
+      }
+
+      const wasUnchanged = batch.isSaved && !batch.isDirty;
+
+      // 更新該批次的最後盤點日為目前盤點作業日 (appState.workingDate)
+      batch.floor = cleanFloor;
+      batch.qty = cleanQty;
+      batch.expiry = cleanExpiry;
+      batch.lastUpdatedDate = appState.workingDate;
+      batch.isSaved = true;
+      batch.isDirty = false;
+      batch.savedSnapshot = {
+        floor: cleanFloor,
+        qty: cleanQty,
+        expiry: cleanExpiry,
+        lastUpdatedDate: appState.workingDate
+      };
+
+      const actionDesc = wasUnchanged
+        ? `確認批次 #${index + 1} 無異動 (${cleanFloor})`
+        : `儲存批次 #${index + 1} (${cleanFloor})`;
+
+      persistSavedBatchesToRecord(drug, actionDesc);
+
+      // 儲存時將語音重設回軟體靜音待命（保持底層麥克風連線不斷開！）
       clearTimeout(autoLockTimer);
       clearTimeout(quickStopTimer);
       isListeningWindowOpen = false;
       voiceTarget = { mode: "DRUG", batchIndex: null };
       consumedRawTranscript = fullRawTranscript;
       currentSessionDeltaRaw = "";
-      updateVoiceControlUI("IDLE", `✅ 已儲存 ${drug.code}！請點「🎤 開始語音搜藥」盤點下一筆`);
+      updateVoiceControlUI("IDLE", `✅ 已儲存 ${drug.code} 批次 #${index + 1}（盤點日：${appState.workingDate}）！`);
 
       renderGlobalNearExpiryBanner();
       renderQuickDrugPills();
       renderActiveDrugCard(drug.id);
       renderOverviewList();
 
-      const stats = calculateBatchStats(validBatches);
-      const evals = evaluateDrugBatchesExpiryAndDepletion(drug, validBatches, appState.workingDate);
-      const hasRisky = evals.some(e => e.isAlert);
       const unitStr = drug.unit ? ` ${drug.unit}` : "";
-
-      if (hasRisky) {
-        showToast(`⚠️ 已儲存「${drug.name}」（總量 ${stats.totalNumeric}${unitStr}），含 120 天內近效期批次！`);
-      } else {
-        showToast(`✅ 已儲存「${drug.name} (${drug.code})」！數字總量：${stats.totalNumeric}${unitStr}`);
-      }
-
-      document.getElementById("searchInput").value = "";
-      document.getElementById("clearSearchBtn").classList.add("hidden");
-      document.getElementById("searchResultsDropdown").classList.add("hidden");
+      const qtyDisp = isStrictNumericQty(cleanQty) ? `${cleanQty}${unitStr}` : cleanQty;
+      showToast(`✅ 已儲存「${drug.name}」批次 #${index + 1} (${cleanFloor} 數量:${qtyDisp})｜盤點日：${appState.workingDate}`);
     }
 
     // =========================================================================
-    // 9. 盤點總覽、Excel 匯出與智慧模糊欄位識別匯入管理
+    // 9. 盤點總覽、Excel 匯出（含各批獨立盤點日）與智慧模糊欄位識別匯入管理
     // =========================================================================
     function setListFilter(filter) {
       currentListFilter = filter;
@@ -2153,7 +2391,7 @@
         if (r && r.batches && r.batches.length > 0) {
           countedDrugs++;
           totalBatches += r.batches.length;
-          const evals = evaluateDrugBatchesExpiryAndDepletion(d, r.batches, appState.workingDate);
+          const evals = evaluateDrugBatchesExpiryAndDepletion(d, r.batches, appState.workingDate, r.lastUpdatedDate);
           if (evals.some(e => e.isAlert)) nearExpiryDrugs++;
         }
       });
@@ -2167,7 +2405,7 @@
       const filtered = appState.drugs.filter(d => {
         const r = appState.records[d.id];
         const hasRec = r?.batches?.length > 0;
-        const evals = hasRec ? evaluateDrugBatchesExpiryAndDepletion(d, r.batches, appState.workingDate) : [];
+        const evals = hasRec ? evaluateDrugBatchesExpiryAndDepletion(d, r.batches, appState.workingDate, r.lastUpdatedDate) : [];
         const hasNear = evals.some(e => e.isAlert);
 
         if (currentListFilter === "DONE" && !hasRec) return false;
@@ -2187,11 +2425,11 @@
         const rec = appState.records[d.id];
         const hasRec = rec && rec.batches && rec.batches.length > 0;
         const stats = hasRec ? calculateBatchStats(rec.batches) : null;
-        const evals = hasRec ? evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, appState.workingDate) : [];
+        const evals = hasRec ? evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, appState.workingDate, rec.lastUpdatedDate) : [];
         const hasNear = evals.some(e => e.isAlert);
         const unitLabel = d.unit ? ` ${escapeHtml(d.unit)}` : "";
 
-        const batchesBadges = hasRec ? evals.map(ev => {
+        const batchesBadges = hasRec ? evals.map((ev, bIdx) => {
           const flBadge = ev.floor === "3樓" ? "bg-sky-100 text-sky-800 border-sky-300" : "bg-emerald-100 text-emerald-800 border-emerald-300";
           const boxBorder = ev.isAlert ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50";
           const qtyDisp = ev.isNum ? `${escapeHtml(ev.rawQty)}${unitLabel}` : `${escapeHtml(ev.rawQty)}`;
@@ -2199,11 +2437,14 @@
             ? `<span class="bg-rose-600 text-white px-1 py-0.2 rounded text-[10px] font-black">🚨過期</span>`
             : (ev.isNearExpiry ? `<span class="bg-amber-400 text-slate-950 px-1 py-0.2 rounded text-[10px] font-black">⚠️剩${ev.daysToExpiry}天</span>` : "");
 
-          return `<span class="inline-flex items-center gap-1 text-xs border ${boxBorder} px-2 py-0.5 rounded-lg">
+          return `<span class="inline-flex flex-wrap items-center gap-1 text-xs border ${boxBorder} px-2 py-0.5 rounded-lg">
+            <span class="text-[10px] font-black text-slate-400">#${bIdx + 1}</span>
             <span class="px-1.5 py-0.2 rounded border text-[10px] font-black ${flBadge}">${escapeHtml(ev.floor)}</span>
             <span>數量: <strong>${qtyDisp}</strong></span>
             <span class="text-slate-300">|</span>
             <span>效期: <strong class="font-mono text-indigo-700">${escapeHtml(ev.rawExpiry)}</strong></span>
+            <span class="text-slate-300">|</span>
+            <span class="text-[10px] font-bold text-slate-600">📅${escapeHtml(ev.batchDate)}</span>
             ${alertPill}
           </span>`;
         }).join("") : `<span class="text-xs text-slate-400">尚未建立盤點紀錄</span>`;
@@ -2224,7 +2465,7 @@
                 ${d.monthlyUsage !== null ? `<span class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded font-bold">月耗:${d.monthlyUsage}${unitLabel}</span>` : ""}
               </div>
               <div class="text-right shrink-0">
-                ${hasRec ? `<span class="text-xs font-black text-emerald-700">總量：${stats.totalNumeric}${unitLabel}</span><span class="block text-[10px] text-slate-500">1樓:${stats.floor1Numeric} / 3樓:${stats.floor3Numeric}｜${rec.lastUpdatedDate}</span>` : `<span class="text-xs font-bold text-slate-400">未盤點</span>`}
+                ${hasRec ? `<span class="text-xs font-black text-emerald-700">總量：${stats.totalNumeric}${unitLabel}</span><span class="block text-[10px] text-slate-500">1樓:${stats.floor1Numeric} / 3樓:${stats.floor3Numeric}</span>` : `<span class="text-xs font-bold text-slate-400">未盤點</span>`}
               </div>
             </div>
             <div class="mt-2 flex flex-wrap gap-1.5">${batchesBadges}</div>
@@ -2257,7 +2498,8 @@
 
         if (rec && Array.isArray(rec.batches) && rec.batches.length > 0) {
           const stats = calculateBatchStats(rec.batches);
-          const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, refDate);
+          const evals = evaluateDrugBatchesExpiryAndDepletion(d, rec.batches, refDate, rec.lastUpdatedDate);
+          const dateSum = getDrugDatesSummary(rec);
 
           evals.forEach((ev, idx) => {
             const nearStatusStr = ev.isExpired
@@ -2276,13 +2518,13 @@
               "該批數量": ev.rawQty,
               "盤點的數量計算單位": unitStr,
               "效期(4碼)": ev.rawExpiry,
+              "該批最後盤點日期": ev.batchDate,
               "推算末效日": ev.expiryDateStr,
               "距末效日天數": ev.daysToExpiry !== null ? ev.daysToExpiry : "",
               "近效期狀態(120天內)": nearStatusStr,
               "藥品的月消耗量": usageVal,
               "屆效前30天能否使用完畢評估": evalSummaryForRow,
-              "單品數字總量(排除文字)": stats.totalNumeric,
-              "最後盤點日期": rec.lastUpdatedDate
+              "單品數字總量(排除文字)": stats.totalNumeric
             };
             detailRows.push(rowObj);
 
@@ -2291,10 +2533,12 @@
                 "評估基準日": refDate,
                 "藥品代碼": d.code,
                 "藥品名稱": d.name,
+                "批次序號": idx + 1,
                 "存放樓層": ev.floor,
                 "該批數量": ev.rawQty,
                 "盤點的數量計算單位": unitStr,
                 "效期(4碼)": ev.rawExpiry,
+                "該批最後盤點日期": ev.batchDate,
                 "推算末效日": ev.expiryDateStr,
                 "距末效日天數": ev.daysToExpiry,
                 "距屆效前30天可用天數": ev.isTextQtyOnlyReminder ? "" : ev.daysUntil30Before,
@@ -2321,12 +2565,12 @@
             "3樓數字總量": stats.floor3Numeric,
             "單品數字總量(1樓+3樓)": stats.totalNumeric,
             "開瓶/文字批次紀錄": stats.textNotes.join("、") || "無",
-            "各樓層數量與4碼效期明細": rec.batches.map(b => {
-              const qDisp = isStrictNumericQty(b.qty) ? `${b.qty}${unitStr}` : b.qty;
-              return `[${b.floor || '1樓'}] 數量:${qDisp} (效期:${b.expiry})`;
+            "各樓層數量、效期與各批最後盤點日明細": evals.map((ev, i) => {
+              const qDisp = ev.isNum ? `${ev.rawQty}${unitStr}` : ev.rawQty;
+              return `[#${i + 1} ${ev.floor}] 數量:${qDisp} / 效期:${ev.rawExpiry} (盤點日:${ev.batchDate})`;
             }).join("； "),
             "近效期(120天內)與屆效前30天耗用評估": nearSummaryStr,
-            "最後盤點日期": rec.lastUpdatedDate
+            "各批最後盤點日期彙整": dateSum.displayStr
           });
 
           (rec.history || []).forEach(h => {
@@ -2334,6 +2578,7 @@
             (h.batches || []).forEach((hb, hIdx) => {
               historyRows.push({
                 "盤點作業日期": h.date,
+                "儲存動作": h.actionNote || "儲存盤點",
                 "儲存時間": h.savedAt || "",
                 "藥品代碼": d.code,
                 "藥品名稱": d.name,
@@ -2342,6 +2587,7 @@
                 "該批數量": hb.qty,
                 "盤點的數量計算單位": unitStr,
                 "效期(4碼)": hb.expiry,
+                "該批當時最後盤點日": hb.lastUpdatedDate || h.date || "",
                 "當時單品數字總量": hStats.totalNumeric
               });
             });
@@ -2356,9 +2602,9 @@
             "3樓數字總量": "",
             "單品數字總量(1樓+3樓)": "",
             "開瓶/文字批次紀錄": "",
-            "各樓層數量與4碼效期明細": "尚未盤點",
+            "各樓層數量、效期與各批最後盤點日明細": "尚未盤點",
             "近效期(120天內)與屆效前30天耗用評估": "",
-            "最後盤點日期": ""
+            "各批最後盤點日期彙整": ""
           });
         }
       });
@@ -2379,7 +2625,6 @@
       }
     }
 
-    // 智慧模糊欄位識別：無論標題是「藥品的月消耗量」、「藥品的月消耗量數據」或「月消耗量」皆可 100% 讀取
     function extractRowFieldByKeywords(row, exactKeys, fuzzyKeywords) {
       for (const k of exactKeys) {
         if (row[k] !== undefined && String(row[k]).trim() !== "") {
@@ -2485,7 +2730,7 @@
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
       XLSX.utils.book_append_sheet(wb, ws, "工作表1");
-      XLSX.writeFile(wb, "白耳鼻喉科藥品基本檔_v5.2.xlsx");
+      XLSX.writeFile(wb, "白耳鼻喉科藥品基本檔_v5.3.xlsx");
       showToast("📄 已匯出 141 筆 4 欄位藥品基本檔！");
     }
 
